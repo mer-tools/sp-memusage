@@ -1,0 +1,26 @@
+
+MALLINFO USAGE
+
+This application may be used for dumping status for mallinfo() and
+sbrk() calls into $HOME/mallinfo-PID.trace file. May be linked
+dynamical and statical. Works everywhere.
+
+To enable tracing you have to set MALLINFO variable:
+   export MALLINFO="yes"        -- use 5 seconds timeout and SIGALRM
+   export MALLINFO="signal=10"  -- use SIGUSR1 to generate the report
+   export MALLINFO="period=10"  -- periodic report for 10 secons
+
+The report format is the following:
+   time    - time of report since application started
+   arena   - size of non-mmapped space allocated from system
+   ordblks - number of free chunks
+   smblks  - number of fastbin blocks
+   hblks   - number of mmapped regions
+   hblkhd  - space in mmapped regions
+   usmblks -  maximum total allocated space
+   fsmblks - space available in freed fastbin blocks
+   uordblks - total allocated space
+   fordblks - total free space
+   keepcost - top-most, releasable (via malloc_trim) space
+   total    - mi.uordblks + mi.fordblks + mi.hblkhd,
+   sbrk     - sbrk pointer at the specified time

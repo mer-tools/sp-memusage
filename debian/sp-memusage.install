@@ -1,0 +1,7 @@
+/usr/lib/mallinfo.so
+/usr/bin/memusage 
+/usr/bin/sum-smaps-private
+/usr/bin/sum-dirty-code-pages
+/usr/share/man/man1/memusage.1
+/usr/share/man/man1/sum-smaps-private.1
+/usr/share/man/man1/sum-dirty-code-pages.1

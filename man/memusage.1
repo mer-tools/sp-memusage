@@ -1,0 +1,24 @@
+.TH MEMUSAGE 1 "2007-07-16" "sp-libleaks"
+.SH NAME
+memusage - output system memory usage at given intervals
+.SH SYNOPSIS
+memusage [interval in secs]
+.SH DESCRIPTION
+\fImemusage\fP outputs (one-liner) system memory usage information from
+/proc/meminfo at given intervals.  By default the interval is 3 seconds.
+.SH EXAMPLE OUTPUT
+Example \fImemusage\fP output:
+.br
+	time:           total:  free:   used:   use-%:  status:
+.br
+	14:06:26        3220376 2986320 234056  7
+.br
+	14:06:29        3220376 2986304 234072  7
+.SH SEE ALSO
+.IR proc (1)
+.SH COPYRIGHT
+Copyright (C) 2007 Nokia Corporation.
+.PP
+This is free software.  You may redistribute copies of it under the
+terms of the GNU General Public License v2 included with the software.
+There is NO WARRANTY, to the extent permitted by law.

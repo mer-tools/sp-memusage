@@ -1,0 +1,28 @@
+Source: sp-memusage
+Section: misc
+Priority: optional
+Maintainer: Eero Tamminen <eero.tamminen@nokia.com>
+Build-Depends: debhelper (>= 4.0.0)
+Standards-Version: 3.6.2
+
+Package: sp-memusage
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: memory usage reporting tool
+ This uses a preload library (mallocinfo.so) and a tool memusgae which 
+ can be used to detect memory leaks between specified
+ points in time. It's used as preload library like:
+   LD_PRELOAD=`pwd`/mallocinfo.so:$LD_PRELOAD ./test
+ Mallinfo library outputs values from the Glibc mallinfo() function,
+ either with SIGUSR1 like libleaks, or at given intervals. I.e. it tells
+ how much allocated *and* freed (but not returned to system) memory is
+ in the C-library memory pool for the process.
+ Memusage just outputs system memory usage information from
+ /proc/meminfo at intervals. 
+
+Package: sp-memusage-dbg
+Architecture: any
+Depends: sp-memusage (=${Source-Version})
+Description: Debug symbols for memusage
+  Debug symbols for memusage
+
