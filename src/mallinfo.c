@@ -1,5 +1,5 @@
 /* ========================================================================= *
- * File: mallinfo.c, part of sp-libleaks
+ * File: mallinfo.c, part of sp-memusage
  * 
  * Copyright (C) 2005 by Nokia Corporation
  * 

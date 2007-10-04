@@ -1,5 +1,5 @@
 /* ========================================================================= *
- * File: memusage.h, part of sp-libleaks
+ * File: memusage.h, part of sp-memusage
  * 
  * Copyright (C) 2005,2006 by Nokia Corporation
  * 
