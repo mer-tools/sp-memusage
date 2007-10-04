@@ -1,5 +1,6 @@
 sp-memusage (1.0.3) unstable; urgency=low
 
   * Separated sp-memusage completely from sp-libleaks source package
+  * Fixes: NB#69043
 
- -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 27 Sep 2007 10:07:16 +0300
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu,  4 Oct 2007 10:15:21 +0300
