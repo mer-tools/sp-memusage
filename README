@@ -56,8 +56,8 @@ fix the fragmentation, "sp-libleaks" package (and its "allocmap" tool)
 can be used to investigate the issue further.
 
 Mallinfo library can be linked dynamically or statically (only shared
-version is provided by default) or as LD_PRELOAD library.  A script is
-provided for getting LD_PRELOAD working in Scratchbox.
+version is provided by default) or as LD_PRELOAD library.  In
+Scratchbox "run-with-mallinfo" helper script is needed LD_PRELOAD.
 
 
 To enable tracing you have to set MALLINFO variable:
