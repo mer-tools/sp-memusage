@@ -1,9 +1,64 @@
 
-MALLINFO USAGE
+SYSTEM MEMORY USAGE UTILITIES
 
-This application may be used for dumping status for mallinfo() and
-sbrk() calls into $HOME/mallinfo-PID.trace file. May be linked
-dynamical and statical. Works everywhere.
+Contents:
+1. memusage
+2. sum-smaps-private
+3. sum-dirty-code-pages
+4. mallinfo
+
+
+This package contains several small utilities for reporting and
+monitoring process memory usage from the system point of view.
+These are documented more in detail in their own manual pages.
+
+Mallinfo is a library so it doesn't have a manual page and
+is documented in detail below.
+
+
+1. memusage
+
+Shows system memory usage at requested intervals.
+
+
+2. sum-smaps-private
+
+Sum the given processes private dirty memory usage from SMAPS data.
+This is more relevant from the system point of view than what "top"
+reports as RSS or VMSIZE usage.
+
+
+3. sum-dirty-code-pages
+
+Sum the given processes private dirty code page usage from SMAPS data.
+Any processes having such use code use dynamic libraries that have been
+improperly built without -fPIC as shared libraries.
+
+The more comprohensive "sp-smaps" and "sp-endurance" packages can be
+also used for processing SMAPS data, but their postprocessing tools
+require Python which is not installed to the device by default. The
+SMAPS scripts in this package need only POSIX shell and Awk which are
+provided by (Maemo) Busybox.
+
+
+4. mallinfo
+
+Mallinfo is a library for for dumping statistics from mallinfo() and
+sbrk() calls into $HOME/mallinfo-PID.trace file.
+
+This can be used to monitor the different between how much process
+uses memory from the system and how much that memory allocated by the
+C-library is re- usable by the process. If this difference grows, the
+process memory is fragmented (heap grows and decreases only from the
+top) and fairly certainly it's leaking.  If this is the case,
+"valgrind" can be used to find out and fix the leaks.  If this doesn't
+fix the fragmentation, "sp-libleaks" package (and its "allocmap" tool)
+can be used to investigate the issue further.
+
+Mallinfo library can be linked dynamically or statically (only shared
+version is provided by default) or as LD_PRELOAD library.  A script is
+provided for getting LD_PRELOAD working in Scratchbox.
+
 
 To enable tracing you have to set MALLINFO variable:
    export MALLINFO="yes"        -- use 5 seconds timeout and SIGALRM
