@@ -1,3 +1,10 @@
+sp-memusage (1.0.4) unstable; urgency=low
+
+  * Include run-with-mallinfo convenience wrapper for using mallinfo in
+    Scratchbox. Fixes: NB#73300
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue,  6 Nov 2007 16:42:11 +0200
+
 sp-memusage (1.0.3) unstable; urgency=low
 
   * Separated sp-memusage completely from sp-libleaks source package
