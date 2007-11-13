@@ -46,11 +46,11 @@ provided by (Maemo) Busybox.
 Mallinfo is a library for for dumping statistics from mallinfo() and
 sbrk() calls into $HOME/mallinfo-PID.trace file.
 
-This can be used to monitor the different between how much process
-uses memory from the system and how much that memory allocated by the
-C-library is re- usable by the process. If this difference grows, the
-process memory is fragmented (heap grows and decreases only from the
-top) and fairly certainly it's leaking.  If this is the case,
+This can be used to monitor the difference between how much process
+uses memory from the system and how much of that memory allocated by
+the C-library is re-usable by the process. If this difference grows,
+the process memory is fragmented (heap grows and decreases only from
+the top) and fairly certainly it's leaking.  If this is the case,
 "valgrind" can be used to find out and fix the leaks.  If this doesn't
 fix the fragmentation, "sp-libleaks" package (and its "allocmap" tool)
 can be used to investigate the issue further.
@@ -63,7 +63,7 @@ Scratchbox "run-with-mallinfo" helper script is needed LD_PRELOAD.
 To enable tracing you have to set MALLINFO variable:
    export MALLINFO="yes"        -- use 5 seconds timeout and SIGALRM
    export MALLINFO="signal=10"  -- use SIGUSR1 to generate the report
-   export MALLINFO="period=10"  -- periodic report for 10 secons
+   export MALLINFO="period=10"  -- periodic report for 10 seconds
 
 The report format is the following:
    time    - time of report since application started
@@ -79,3 +79,4 @@ The report format is the following:
    keepcost - top-most, releasable (via malloc_trim) space
    total    - mi.uordblks + mi.fordblks + mi.hblkhd,
    sbrk     - sbrk pointer at the specified time
+

@@ -86,3 +86,9 @@ else
 	$app $app_opts &
 fi
 
+echo "To enable tracing you have to set MALLINFO variable:"
+echo "   export MALLINFO="yes"        -- use 5 seconds timeout and SIGALRM"
+echo "   export MALLINFO="signal=10"  -- use SIGUSR1 to generate the report"
+echo "   export MALLINFO="period=10"  -- periodic report for 10 seconds"
+
+
