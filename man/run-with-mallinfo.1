@@ -1,13 +1,17 @@
-.TH RUN-WITH-MALLINFO 1 "2007-11-06" "sp-meminfo"
+.TH RUN-WITH-MALLINFO 1 "2007-11-06" "sp-memusage"
 .SH NAME
 run-with-mallinfo - run Maemo applications under mallinfo
 .SH SYNOPSIS
 run-with-mallinfo \fIbinary\fP \fIarguments\fP
 .SH DESCRIPTION
 \fIrun-with-mallinfo\fP is a helper script for the mallinfo
-wrapper library. The script runs given binary (with its arguments)
-under mallinfo using suitable options for the Maemo environment.  For
-example maemo-launched applications are run with \fImaemo-summoner\fP.
+wrapper library. Mallinfo reports application memory usage
+(according to Glibc mallopt()) at given intervals or when
+requested with SIGUSR1.
+
+The script runs given binary (with its arguments) under mallinfo
+using suitable options for the Maemo environment.  For example
+maemo-launched applications are run with \fImaemo-summoner\fP.
 .PP
 Normally script uses just LD_PRELOAD to run the application under
 mallinfo, but that doesn't work with Scratchbox. Inside Scratchbox
