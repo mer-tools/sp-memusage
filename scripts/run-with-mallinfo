@@ -76,12 +76,12 @@ fi
 
 # LD_PRELOAD doesn't work in Scratchbox
 if [ -f /targets/links/scratchbox.config ]; then
-	echo "Using /etc/ld.so/preload for overriding alloc functions in $app with mallinfo"
+	echo "Using /etc/ld.so/preload for loading mallinfo to $app"
 	echo $mallinfo > /etc/ld.so.preload
 	$app $app_opts &
 	rm /etc/ld.so.preload
 else
-	echo "Using LD_PRELOAD for overriding alloc functions in $app with mallinfo"
+	echo "Using LD_PRELOAD for loading mallinfo to $app"
 	export LD_PRELOAD=$LD_PRELOAD:$mallinfo
 	$app $app_opts &
 fi
