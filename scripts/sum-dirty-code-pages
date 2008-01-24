@@ -67,7 +67,7 @@ for pid in $*; do
 	# get summary
 	values=$(awk 'BEGIN { shared=0; private=0; }
 	/^[-0-9a-f]+ ..-. /      { code=0; next }
-	/^[-0-9a-f]+ ..x. .* [[]/{ code=""; next }
+	/^[-0-9a-f]+ ..x. .* [[]/{ code=0; next }
 	/^[-0-9a-f]+ ..x. .* \// { code=1; next }
 	code && /Private_Dirty:/ { private += $2; next }
 	code && /Shared_Dirty:/  { shared  += $2; next }
