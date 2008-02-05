@@ -1,4 +1,4 @@
-/usr/lib/mallinfo.so
+/usr/lib/mallinfo.so*
 /usr/bin/memusage 
 /usr/bin/sum-smaps-private
 /usr/bin/sum-dirty-code-pages

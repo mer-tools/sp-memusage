@@ -14,7 +14,7 @@ tags:
 	ctags *.c *.h
 
 lib/mallinfo.so: src/mallinfo.c
-	gcc -g -W -Wall -shared -O2 -fPIC -o $@ $^
+	gcc -g -W -Wall -shared -O2 -fPIC  -Wl,-soname,mallinfo.so.0 -o $@ $^
 
 bin/memusage: src/memusage.c
 	gcc -g -DTESTING -W -Wall -O2 -o $@ $^
