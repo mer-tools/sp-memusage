@@ -23,5 +23,6 @@ Package: sp-memusage-dbg
 Architecture: any
 Depends: sp-memusage (=${Source-Version})
 Description: Debug symbols for memusage
- Debug symbols for memusage
+ Debug symbols for memusage tools and mallinfo library to use with
+ tools such as GDB.
 
