@@ -1,8 +1,9 @@
 sp-memusage (1.0.5) unstable; urgency=low
 
   * Fixed SONAME missing from libmalloc to satisfy Lintian.
+  * Fixes: NB#79547
 
- -- Eero Tamminen <eero.tamminen@nokia.com>  Tue,  5 Feb 2008 12:54:14 +0200
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Wed,  6 Feb 2008 15:43:48 +0200
 
 sp-memusage (1.0.4) unstable; urgency=low
 
