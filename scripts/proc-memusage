@@ -1,0 +1,52 @@
+#!/bin/sh
+#
+# Show system memory usage and given process memory usage at 2 sec
+# interval. Process can be given as process name or PID.
+
+cd /proc
+
+pid=$(pidof $1)
+if [ -z "$pid" ]; then
+	pid=$1
+fi
+if [ \! -d "$pid" ]; then
+	echo -e "\nWARNING: No single process matching given '$pid' PID,"
+	echo -e "\t showing extended system information instead."
+	echo -e "\t (including swap, free = free+cached+buffers)"
+	# headings
+	echo -e "\ntime:\t\ttotal:\tfree:\tused:\t\tuse-%:"
+	# whole system free
+	while true; do
+		awk -v time=$(date +"%T") '
+		/(Mem|Swap)Total:/ { total += $2 }
+		/(Mem|Swap|^)(Free|Buffers|Cached):/ { free += $2 }
+		END { used = total-free;
+		      printf("%s\t%d\t%d\t%d kB\t%d%%\n", time, total, free, used, used*100/total)
+		}' meminfo
+		sleep 2
+       done
+       exit 0
+fi
+
+# otherwise show app details and system free
+app=$(tr '\0' ' '<$pid/cmdline|cut -d' ' -f1)
+echo -e "\nSystem free and memory usage for $app[$pid]"
+echo -e "(without swap as SMAPS doesn't report swap correctly)"
+echo -e "\n\t\tsystem\t\tprocess\t\t,--- dirty ---."
+echo -e "time:\t\tfree:\t\tsize:\trss:\tshared:\tprivate:"
+while true; do
+	# process memory usage
+	awk -v time=$(date +"%T") '
+	/^(MemFree|Buffers|Cached):/ { free += $2 }
+	END { printf("%s\t%d\t\t", time, free) }' meminfo
+	awk '
+	/Size:/ { size += $2 }
+	/Rss:/ { rss += $2 }
+	/Shared_Dirty:/ { sdirty += $2 }
+	/Private_Dirty:/ { pdirty += $2 }
+	END {
+		printf("%d\t%d\t%d\t%d kB\n", size, rss, sdirty, pdirty)
+	}' $pid/smaps
+	# whole system free memory
+	sleep 2
+done
