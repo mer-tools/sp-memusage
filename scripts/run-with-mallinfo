@@ -2,7 +2,7 @@
 #
 # Helper script for using mallinfo on binaries in Scratchbox,
 # includes stuff from run-standalone.sh.  This file is part of
-# sp-meminfo.
+# sp-memusage.
 #
 # Copyright (C) 2006,2007 by Nokia Corporation
 #
