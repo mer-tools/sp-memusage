@@ -1,15 +1,85 @@
 #!/bin/sh
 #
-# Show system memory usage and given process memory usage at 2 sec
-# interval. Process can be given as process name or PID.
+# Script for showing system and given process memory usage at
+# fixed interval.  This file is part of sp-memusage.
+#
+# Copyright (C) 2008 by Nokia Corporation
+#
+# Contact: Eero Tamminen <eero.tamminen@nokia.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License 
+# version 2 as published by the Free Software Foundation. 
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
 
-cd /proc
+default_interval=5
+interval=$default_interval
 
-pid=$(pidof $1)
-if [ -z "$pid" ]; then
-	pid=$1
-fi
-if [ \! -d "$pid" ]; then
+exit_with_error()
+{
+	name=${0##*/}
+	echo
+	echo "Show system and optionally process memory usage statistics"
+	echo "at a fixed interval."
+	echo
+	echo "usage: $name [-i <interval>] [-p <process>]"
+	echo
+	echo "<interval> is the time between screen updates, >1, default=$default_interval"
+	echo "<process> can be specified either by its PID or name"
+	echo
+	echo "example: $name -i 10 -p esd"
+	echo
+	if [ \! -z "$1" ]; then
+		echo "ERROR: $1"
+		echo
+	fi
+	exit 1
+}
+
+while true; do
+	# args done?
+	if [ $# -eq 0 ]; then
+		break
+	fi
+	# options...
+	case "$1" in
+		-i)
+			interval=$2
+			;;
+		-p)
+			pid=$(pidof $2)
+			if [ -z "$pid" ]; then
+				pid=$2
+			fi
+			;;
+		*)
+			exit_with_error "unknown option '$1'"
+			;;
+	esac
+	# option was without value?
+	if [ $# -eq 1 ]; then
+		exit_with_error "option '$1' is lacking a value"
+	fi
+	# invalid value?
+	if [ $2 -lt 1 ]; then
+	 	exit_with_error "invalid option '$1' value '$2'"
+	fi
+	# next pair of args
+	shift
+	shift
+done
+
+system_memory()
+{
 	echo -e "\nWARNING: No single process matching given '$pid' PID,"
 	echo -e "\t showing extended system information instead."
 	echo -e "\t (including swap, free = free+cached+buffers)"
@@ -23,30 +93,41 @@ if [ \! -d "$pid" ]; then
 		END { used = total-free;
 		      printf("%s\t%d\t%d\t%d kB\t%d%%\n", time, total, free, used, used*100/total)
 		}' meminfo
-		sleep 2
+		sleep $interval
        done
        exit 0
-fi
+}
 
-# otherwise show app details and system free
-app=$(tr '\0' ' '<$pid/cmdline|cut -d' ' -f1)
-echo -e "\nSystem free and memory usage for $app[$pid]"
-echo -e "(without swap as SMAPS doesn't report swap correctly)"
-echo -e "\n\t\tsystem\t\tprocess\t\t,--- dirty ---."
-echo -e "time:\t\tfree:\t\tsize:\trss:\tshared:\tprivate:"
-while true; do
-	# process memory usage
-	awk -v time=$(date +"%T") '
-	/^(MemFree|Buffers|Cached):/ { free += $2 }
-	END { printf("%s\t%d\t\t", time, free) }' meminfo
-	awk '
-	/Size:/ { size += $2 }
-	/Rss:/ { rss += $2 }
-	/Shared_Dirty:/ { sdirty += $2 }
-	/Private_Dirty:/ { pdirty += $2 }
-	END {
+process_memory()
+{
+	app=$(tr '\0' ' '<$pid/cmdline|cut -d' ' -f1)
+	echo -e "\nSystem free and memory usage for $app[$pid]"
+	echo -e "(without swap as SMAPS doesn't report swap correctly)"
+	# headings
+	echo -e "\n\t\tsystem\t\tprocess\t\t,--- dirty ---."
+	echo -e "time:\t\tfree:\t\tsize:\trss:\tshared:\tprivate:"
+	# system and process memory
+	while true; do
+		# time + whole system free memory
+		awk -v time=$(date +"%T") '
+		/^(MemFree|Buffers|Cached):/ { free += $2 }
+		END { printf("%s\t%d\t\t", time, free) }' meminfo
+		# process memory usage according to SMAPS
+		awk '
+		/Size:/ { size += $2 }
+		/Rss:/ { rss += $2 }
+		/Shared_Dirty:/ { sdirty += $2 }
+		/Private_Dirty:/ { pdirty += $2 }
+		END {
 		printf("%d\t%d\t%d\t%d kB\n", size, rss, sdirty, pdirty)
-	}' $pid/smaps
-	# whole system free memory
-	sleep 2
-done
+		}' $pid/smaps
+		sleep $interval
+	done
+}
+
+cd /proc
+if [ \! -d "$pid" ]; then
+	system_memory
+else
+	process_memory
+fi
