@@ -21,6 +21,8 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA
 
+cd /proc
+
 default_interval=5
 interval=$default_interval
 
@@ -33,8 +35,8 @@ exit_with_error()
 	echo
 	echo "usage: $name [-i <interval>] [-p <process>]"
 	echo
-	echo "<interval> is the time between screen updates, >1, default=$default_interval"
-	echo "<process> can be specified either by its PID or name"
+	echo "<interval> is the time between screen updates, >1, default=$default_interval."
+	echo "<process> can be specified either by its PID or name."
 	echo
 	echo "example: $name -i 10 -p esd"
 	echo
@@ -58,7 +60,11 @@ while true; do
 		-p)
 			pid=$(pidof $2)
 			if [ -z "$pid" ]; then
-				pid=$2
+				if [ -d $2 ]; then
+					pid=$2
+				else
+					exit_with_error "no process with PID or name '$2'"
+				fi
 			else
 				# OK -> skip value checks
 				shift; shift
@@ -83,11 +89,10 @@ done
 
 system_memory()
 {
-	echo -e "\nNo single process matching given '$pid' PID, so"
-	echo -e "showing extended system information instead."
-	echo -e "(including swap, free = free+cached+buffers)"
+	echo -e "\nSystem memory usage information, including swap."
+	echo -e "(free = free+cached+buffers for RAM and swap)\n"
 	# headings
-	echo -e "\ntime:\t\ttotal:\tfree:\tused:\t\tuse-%:"
+	echo -e "time:\t\ttotal:\tfree:\tused:\t\tuse-%:"
 	# whole system free
 	while true; do
 		awk -v time=$(date +"%T") '
@@ -105,9 +110,9 @@ process_memory()
 {
 	app=$(tr '\0' ' '<$pid/cmdline|cut -d' ' -f1)
 	echo -e "\nSystem free and memory usage for $app[$pid] according to SMAPS."
-	echo -e "(without swap as SMAPS doesn't report swap correctly)"
+	echo -e "(without swap as SMAPS doesn't report swap correctly)\n"
 	# headings
-	echo -e "\n\t\tsystem\t\tprocess\t\t,--- dirty ---."
+	echo -e "\t\tsystem\t\tprocess\t\t,--- dirty ---."
 	echo -e "time:\t\tfree:\t\tsize:\trss:\tshared:\tprivate:"
 	# system and process memory
 	while true; do
@@ -128,9 +133,8 @@ process_memory()
 	done
 }
 
-cd /proc
-if [ \! -d "$pid" ]; then
-	system_memory
-else
+if [ -d "$pid" ]; then
 	process_memory
+else
+	system_memory
 fi
