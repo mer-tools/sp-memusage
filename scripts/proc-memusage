@@ -59,6 +59,10 @@ while true; do
 			pid=$(pidof $2)
 			if [ -z "$pid" ]; then
 				pid=$2
+			else
+				# OK -> skip value checks
+				shift; shift
+				continue
 			fi
 			;;
 		*)
@@ -74,15 +78,14 @@ while true; do
 	 	exit_with_error "invalid option '$1' value '$2'"
 	fi
 	# next pair of args
-	shift
-	shift
+	shift; shift
 done
 
 system_memory()
 {
-	echo -e "\nWARNING: No single process matching given '$pid' PID,"
-	echo -e "\t showing extended system information instead."
-	echo -e "\t (including swap, free = free+cached+buffers)"
+	echo -e "\nNo single process matching given '$pid' PID, so"
+	echo -e "showing extended system information instead."
+	echo -e "(including swap, free = free+cached+buffers)"
 	# headings
 	echo -e "\ntime:\t\ttotal:\tfree:\tused:\t\tuse-%:"
 	# whole system free
@@ -101,7 +104,7 @@ system_memory()
 process_memory()
 {
 	app=$(tr '\0' ' '<$pid/cmdline|cut -d' ' -f1)
-	echo -e "\nSystem free and memory usage for $app[$pid]"
+	echo -e "\nSystem free and memory usage for $app[$pid] according to SMAPS."
 	echo -e "(without swap as SMAPS doesn't report swap correctly)"
 	# headings
 	echo -e "\n\t\tsystem\t\tprocess\t\t,--- dirty ---."
