@@ -38,7 +38,7 @@ The more comprohensive "sp-smaps" and "sp-endurance" packages can be
 also used for processing SMAPS data, but their postprocessing tools
 require Python which is not installed to the device by default. The
 SMAPS scripts in this package need only POSIX shell and Awk which are
-provided by (Maemo) Busybox.
+provided by Busybox.
 
 
 4. mallinfo
@@ -47,8 +47,8 @@ Mallinfo is a library for for dumping statistics from mallinfo() and
 sbrk() calls into $HOME/mallinfo-PID.trace file.
 
 This can be used to monitor the difference between how much process
-uses memory from the system and how much of that memory allocated by
-the C-library is re-usable by the process. If this difference grows,
+uses memory from the system and how much of that memory is allocated
+by the C-library is re-usable by the process. If this difference grows,
 the process memory is fragmented (heap grows and decreases only from
 the top) and fairly certainly it's leaking.  If this is the case,
 "valgrind" can be used to find out and fix the leaks.  If this doesn't
@@ -57,7 +57,7 @@ can be used to investigate the issue further.
 
 Mallinfo library can be linked dynamically or statically (only shared
 version is provided by default) or as LD_PRELOAD library.  In
-Scratchbox "run-with-mallinfo" helper script is needed LD_PRELOAD.
+Scratchbox "run-with-mallinfo" helper script is needed for LD_PRELOAD.
 
 
 To enable tracing you have to set MALLINFO variable:

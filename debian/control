@@ -17,7 +17,7 @@ Description: memory usage reporting tool
    detect memory fragmentation.
  - Memusage just outputs system memory usage information from
    /proc/meminfo at given intervals.
- README tells more about the scripts.
+ Manual pages tell more about the scripts.
 
 Package: sp-memusage-dbg
 Architecture: any
