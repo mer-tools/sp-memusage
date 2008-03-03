@@ -1,0 +1,41 @@
+.TH PROC-MEMUSAGE 1 "2008-03-03" "sp-memusage"
+.SH NAME
+proc-memusage - output process (or system) memory usage at given intervals
+.SH SYNOPSIS
+memusage [\fI-i <interval>\fP] [\fI-p <process>\fP]
+.SH DESCRIPTION
+\fIproc-memusage\fP outputs (one-liner) process or system memory usage information from /proc/meminfo at given intervals. 
+.SH OPTIONS
+.IP -i
+The interval between memory usage information updates. By default the interval is 5 seconds.
+.IP -p
+The process ID (or name) which the tool should monitor. If this is omitted, the whole system memory usage is monitored instead.
+.SH EXAMPLE OUTPUT
+Example \fIproc-memusage\fP output (invoked with proc-memusage -p esd):
+.br
+
+.br 
+System free and memory usage for /usr/bin/esd[1004] according to SMAPS.
+.br
+(without swap as SMAPS doesn't report swap correctly)
+.br
+ 
+.br
+        system         process         ,--- dirty ---.
+.br
+ time:    free:  size:   rss:    shared: private:
+.br
+ 05:10:28 42908  2168    640     0       212 kB
+.br
+ 05:10:33 42912  2168    640     0       212 kB
+.br
+ 05:10:38 42920  2168    640     0       212 kB
+.SH SEE ALSO
+.IR proc (1)
+.IR memusage (1)
+.SH COPYRIGHT
+Copyright (C) 2008 Nokia Corporation.
+.PP
+This is free software.  You may redistribute copies of it under the
+terms of the GNU General Public License v2 included with the software.
+There is NO WARRANTY, to the extent permitted by law.
