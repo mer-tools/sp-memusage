@@ -3,9 +3,10 @@ SYSTEM MEMORY USAGE UTILITIES
 
 Contents:
 1. memusage
-2. sum-smaps-private
-3. sum-dirty-code-pages
-4. mallinfo
+2. proc-memusage
+3. sum-smaps-private
+4. sum-dirty-code-pages
+5. mallinfo
 
 
 This package contains several small utilities for reporting and
@@ -21,14 +22,21 @@ is documented in detail below.
 Shows system memory usage at requested intervals.
 
 
-2. sum-smaps-private
+2. proc-memusage
+
+Shows either system memory usage at requested intervals in fairly
+similar fashion as memusage, or the memory usage of an individual
+process.
+
+
+3. sum-smaps-private
 
 Sum the given processes private dirty memory usage from SMAPS data.
 This is more relevant from the system point of view than what "top"
 reports as RSS or VMSIZE usage.
 
 
-3. sum-dirty-code-pages
+4. sum-dirty-code-pages
 
 Sum the given processes private dirty code page usage from SMAPS data.
 Any processes having such use code use dynamic libraries that have been
@@ -41,7 +49,7 @@ SMAPS scripts in this package need only POSIX shell and Awk which are
 provided by Busybox.
 
 
-4. mallinfo
+5. mallinfo
 
 Mallinfo is a library for for dumping statistics from mallinfo() and
 sbrk() calls into $HOME/mallinfo-PID.trace file.
