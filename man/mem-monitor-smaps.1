@@ -1,17 +1,17 @@
-.TH PROC-MEMUSAGE 1 "2008-03-03" "sp-memusage"
+.TH MEM-MONITOR-SMAPS 1 "2008-03-19" "sp-memusage"
 .SH NAME
-proc-memusage - output process (or system) memory usage at given intervals
+mem-monitor-smaps - output process (or system) memory usage at given intervals
 .SH SYNOPSIS
-memusage [\fI-i <interval>\fP] [\fI-p <process>\fP]
+mem-monitor-smaps [\fI-i <interval>\fP] [\fI-p <process>\fP]
 .SH DESCRIPTION
-\fIproc-memusage\fP outputs (one-liner) process or system memory usage information from /proc/meminfo at given intervals. 
+\fImem-monitor-smaps\fP outputs (one-liner) process or system memory usage information from /proc/meminfo at given intervals. 
 .SH OPTIONS
 .IP -i
 The interval between memory usage information updates. By default the interval is 5 seconds.
 .IP -p
 The process ID (or name) which the tool should monitor. If this is omitted, the whole system memory usage is monitored instead.
 .SH EXAMPLE OUTPUT
-Example \fIproc-memusage\fP output (invoked with proc-memusage -p esd):
+Example \fImem-monitor-smaps\fP output (invoked with mem-monitor-smaps -p esd):
 .br
 
 .br 

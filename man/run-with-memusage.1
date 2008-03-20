@@ -5,9 +5,11 @@ run-with-memusage - run Maemo applications under memusage
 run-with-memusage \fIbinary\fP \fIarguments\fP
 .SH DESCRIPTION
 \fIrun-with-memusage\fP is a helper script for the memusage
-wrapper library provided by libc6. Memusage collects statistics about
+wrapper library provided by glibc. Memusage collects statistics about
 application memory management during its runtime and reports them
-after the application exits. 
+after the application exits. Please note that the application needs to
+exit normally in order to provide the statistics; for example, applications
+terminated with signals will not produce any statistics output. 
 
 The script runs given binary (with its arguments) under memusage
 using suitable options for the Maemo environment.  For example
@@ -16,7 +18,10 @@ maemo-launched applications are run with \fImaemo-summoner\fP.
 Normally script uses just LD_PRELOAD to run the application under
 mallinfo, but that doesn't work with Scratchbox. Inside Scratchbox
 the script needs to temporarily modify /etc/ld.so.preload file instead
-when starting the application.
+when starting the application. For additional details about the environmental
+variables controlling the behavior of libmemusage,
+please see \fImalloc/memusage.c\fP in the glibc source.
+ 
 .SH EXAMPLES
 There are a few ways to use this script:
 .PP

@@ -1,5 +1,5 @@
 
-BINS = bin/memusage
+BINS = bin/mem-monitor
 LIBS = lib/mallinfo.so
 
 all: $(BINS) $(LIBS)
@@ -16,7 +16,7 @@ tags:
 lib/mallinfo.so: src/mallinfo.c
 	gcc -g -W -Wall -shared -O2 -fPIC  -Wl,-soname,mallinfo.so.0 -o $@ $^
 
-bin/memusage: src/memusage.c
+bin/mem-monitor: src/mem-monitor.c
 	gcc -g -DTESTING -W -Wall -O2 -o $@ $^
 
 install:

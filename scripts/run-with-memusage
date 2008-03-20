@@ -1,0 +1,98 @@
+#!/bin/sh
+#
+# Helper script for using /lib/libmemusage.so on binaries in Scratchbox,
+# includes stuff from run-standalone.sh.  This file is part of
+# sp-memusage.
+#
+# Copyright (C) 2006,2007,2008 by Nokia Corporation
+#
+# Contact: Eero Tamminen <eero.tamminen@nokia.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License 
+# version 2 as published by the Free Software Foundation. 
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301 USA
+#
+# 
+# There are several ways to use this script
+# - Rename the original binary to <name>.real and
+#   put/link this script in place of the original binary
+# - If the binary is using "maemo-launcher", this can
+#   be linked instead of the "maemo-invoker" and it will
+#   automatically call "launcher-wrapper"
+# - Call the binary with this script, e.g. like this
+#   export MALLINFO="yes" DISPLAY=:1
+#   run-standalone.sh run-with-mallinfo <binary> <arguments>
+# 
+# This sets all the required environment variables etc.
+# before calling mallinfo. (see README for more documentation about
+# other valid values of MALLINFO)
+
+wrapper=/usr/bin/maemo-summoner
+
+if [ -x "$0.real" ]; then
+	app="$0.real"
+elif [ -x "$1.launch" ] || [ -x "$0.launch" ] || [ "${1##*.}" = "launch" ]; then
+	# use launcher wrapper automatically if given binary that needs it
+	if [ \! -x "$wrapper" ]; then
+		echo "ERROR: '$wrapper' for running .launch binaries is missing!"
+		exit 1
+	fi
+	echo "$0: $*"
+	if [ -x "$1.launch" ]; then
+		app="$wrapper $1.launch"
+		shift
+        elif [ -x "$0.launch" ]; then
+		app="$wrapper $0.launch"
+	else
+		app="$wrapper $1"
+		shift
+	fi
+	echo "$0: $*"
+elif [ -x "$1" ]; then
+	app="$1"
+	shift
+else
+	echo "ERROR: no application given!"
+	exit 1
+fi
+app_opts="$*"
+
+# funny things happen if library set to /etc/ld.so.preload is missing...
+memusage=/lib/libmemusage.so
+if [ \! -f $memusage ]; then
+	echo "ERROR: $memusage missing!"
+	exit 1
+fi
+
+# LD_PRELOAD doesn't work in Scratchbox
+if [ -f /targets/links/scratchbox.config ]; then
+	echo "Using /etc/ld.so.preload for loading memusage to $app"
+	echo $memusage > /etc/ld.so.preload
+	$app $app_opts &
+	rm /etc/ld.so.preload
+else
+	echo "Using LD_PRELOAD for loading memusage to $app"
+	export LD_PRELOAD=$LD_PRELOAD:$memusage
+	$app $app_opts &
+fi
+
+echo "Supported environmental variables:"
+echo "   export MEMUSAGE_TRACE_MMAP="yes" -- Trace also mmap function details"
+echo "   export MEMUSAGE_OUTPUT="file"    -- Store binary datadump into a file "
+echo "   export MEMUSAGE_PROG_NAME="prog" -- Profile only program 'prog'"
+echo "   export MEMUSAGE_BUFFER_SIZE="10" -- Size of internal buffer (1=none)"
+echo "   export MEMUSAGE_NO_TIMER="yes"   -- Set: no additional stack info collected"
+echo "Please note that the process needs to exit normally for the tracing"
+echo "to work. See meminfo.sh shell script provided by glibc sources"
+echo "for some additional information about the environmental variables."
+

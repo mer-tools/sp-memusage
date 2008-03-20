@@ -2,12 +2,12 @@
 SYSTEM MEMORY USAGE UTILITIES
 
 Contents:
-1. memusage
-2. proc-memusage
-3. sum-smaps-private
-4. sum-dirty-code-pages
+1. mem-monitor
+2. mem-monitor-smaps
+3. mem-smaps-private
+4. mem-dirty-code-pages
 5. mallinfo
-
+6. run-with-memusage
 
 This package contains several small utilities for reporting and
 monitoring process memory usage from the system point of view.
@@ -17,26 +17,26 @@ Mallinfo is a library so it doesn't have a manual page and
 is documented in detail below.
 
 
-1. memusage
+1. mem-monitor
 
 Shows system memory usage at requested intervals.
 
 
-2. proc-memusage
+2. mem-monitor-smaps
 
 Shows either system memory usage at requested intervals in fairly
-similar fashion as memusage, or the memory usage of an individual
+similar fashion as mem-monitor, or the memory usage of an individual
 process.
 
 
-3. sum-smaps-private
+3. mem-smaps-private
 
 Sum the given processes private dirty memory usage from SMAPS data.
 This is more relevant from the system point of view than what "top"
 reports as RSS or VMSIZE usage.
 
 
-4. sum-dirty-code-pages
+4. mem-dirty-code-pages
 
 Sum the given processes private dirty code page usage from SMAPS data.
 Any processes having such use code use dynamic libraries that have been
@@ -88,3 +88,10 @@ The report format is the following:
    total    - mi.uordblks + mi.fordblks + mi.hblkhd,
    sbrk     - sbrk pointer at the specified time
 
+6. run-with-memusage
+
+A convenience wrapper similar to run-with-mallinfo (i.e. user does not have to
+care about preloading differences between Scratchbox and other environments),
+but wraps libmemusage library instead.  When run with this script,
+statistics about application memory allocations will be displayed when
+the application exits.

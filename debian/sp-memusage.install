@@ -1,11 +1,13 @@
 /usr/lib/mallinfo.so*
-/usr/bin/memusage
-/usr/bin/proc-memusage 
+/usr/bin/mem-monitor
+/usr/bin/mem-monitor-smaps 
 /usr/bin/sum-smaps-private
 /usr/bin/sum-dirty-code-pages
 /usr/bin/run-with-mallinfo
-/usr/share/man/man1/memusage.1
-/usr/share/man/man1/proc-memusage.1
+/usr/bin/run-with-memusage
+/usr/share/man/man1/mem-monitor.1
+/usr/share/man/man1/mem-monitor-smaps.1
 /usr/share/man/man1/sum-smaps-private.1
 /usr/share/man/man1/sum-dirty-code-pages.1
 /usr/share/man/man1/run-with-mallinfo.1
+/usr/share/man/man1/run-with-memusage.1

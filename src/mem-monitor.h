@@ -1,7 +1,7 @@
 /* ========================================================================= *
- * File: memusage.h, part of sp-memusage
+ * File: mem-monitor.h, part of sp-memusage
  * 
- * Copyright (C) 2005,2006 by Nokia Corporation
+ * Copyright (C) 2005-2008 by Nokia Corporation
  * 
  * Author: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
  * Contact: Eero Tamminen <eero.tamminen@nokia.com>
@@ -26,8 +26,8 @@
  * - initial version created using memlimits.c as a prototype.
  * ========================================================================= */
 
-#ifndef MEMUSAGE_H_USED
-#define MEMUSAGE_H_USED
+#ifndef MEM_MONITOR_H_USED
+#define MEM_MONITOR_H_USED
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,4 +69,4 @@ int memusage(MEMUSAGE* usage);
 }
 #endif
 
-#endif /* MEMUSAGE_H_USED */
+#endif /* MEM_MONITOR_H_USED */

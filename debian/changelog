@@ -1,3 +1,15 @@
+sp-memusage (1.0.7) unstable; urgency=low
+
+  * New helper script (run-with-memusage) has been added.
+  * Made naming of existing helper scripts more consistent:
+    memusage -> mem- monitor,
+    proc-memusage -> mem-monitor-proc,
+    sum-smaps-private -> mem-smaps-private,
+    sum-dirty-code-pages -> mem-dirty-code-pages
+  * Fixes: NB#82164
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 20 Mar 2008 12:45:22 +0200
+
 sp-memusage (1.0.6) unstable; urgency=low
 
   * New tool (proc-memusage) and correspoding documentation have been

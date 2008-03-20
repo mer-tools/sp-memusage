@@ -1,7 +1,7 @@
 /* ========================================================================= *
- * File: memusage.c, part of sp-memusage
+ * File: mem-momitor.c, part of sp-memusage
  * 
- * Copyright (C) 2005,2006 by Nokia Corporation
+ * Copyright (C) 2005-2008 by Nokia Corporation
  * 
  * Author: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
  * Contact: Eero Tamminen <eero.tamminen@nokia.com>
@@ -48,7 +48,7 @@
 #include <unistd.h>
 #include <ctype.h>
 
-#include "memusage.h"
+#include "mem-monitor.h"
 
 /* ========================================================================= *
  * Definitions.
@@ -243,5 +243,5 @@ int main(const int argc, const char* argv[])
 #endif /* TESTING */
 
 /* ========================================================================= *
- *                    No more code in file memusage.c                       *
+ *                    No more code in file mem-monitor.c                     *
  * ========================================================================= */

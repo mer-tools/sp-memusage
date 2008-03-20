@@ -1,13 +1,13 @@
-.TH MEMUSAGE 1 "2007-07-16" "sp-memusage"
+.TH MEM-MONITOR 1 "2008-03-19" "sp-memusage"
 .SH NAME
-memusage - output system memory usage at given intervals
+mem-monitor - output system memory usage at given intervals
 .SH SYNOPSIS
-memusage [interval in secs]
+mem-monitor [interval in secs]
 .SH DESCRIPTION
-\fImemusage\fP outputs (one-liner) system memory usage information from
+\fImem-monitor\fP outputs (one-liner) system memory usage information from
 /proc/meminfo at given intervals.  By default the interval is 3 seconds.
 .SH EXAMPLE OUTPUT
-Example \fImemusage\fP output:
+Example \fImem-monitor\fP output:
 .br
 	time:           total:  free:   used:   use-%:  status:
 .br
@@ -17,7 +17,7 @@ Example \fImemusage\fP output:
 .SH SEE ALSO
 .IR proc (1)
 .SH COPYRIGHT
-Copyright (C) 2007 Nokia Corporation.
+Copyright (C) 2007,2008 Nokia Corporation.
 .PP
 This is free software.  You may redistribute copies of it under the
 terms of the GNU General Public License v2 included with the software.
