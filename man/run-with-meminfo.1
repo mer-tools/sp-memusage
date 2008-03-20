@@ -1,0 +1,46 @@
+.TH RUN-WITH-MEMUSAGE 1 "2008-03-20" "sp-memusage"
+.SH NAME
+run-with-memusage - run Maemo applications under memusage
+.SH SYNOPSIS
+run-with-memusage \fIbinary\fP \fIarguments\fP
+.SH DESCRIPTION
+\fIrun-with-memusage\fP is a helper script for the memusage
+wrapper library provided by libc6. Memusage collects statistics about
+application memory management during its runtime and reports them
+after the application exits. 
+
+The script runs given binary (with its arguments) under memusage
+using suitable options for the Maemo environment.  For example
+maemo-launched applications are run with \fImaemo-summoner\fP.
+.PP
+Normally script uses just LD_PRELOAD to run the application under
+mallinfo, but that doesn't work with Scratchbox. Inside Scratchbox
+the script needs to temporarily modify /etc/ld.so.preload file instead
+when starting the application.
+.SH EXAMPLES
+There are a few ways to use this script:
+.PP
+\(bu If the binary is using "maemo-launcher", this script can be linked
+to the binary name instead of the "maemo-invoker" and the script will
+automatically call "maemo-summoner" as needed.
+.PP
+\(bu Call the binary directly with this script, e.g. like this:
+.br
+.B	DISPLAY=:1
+.br
+.B      run-standalone.sh run-with-memusage <binary> <arguments>
+.PP
+\(bu Rename the original binary to <name>.real and put/link this
+script in place of the original binary.
+.PP
+.SH FILES
+.br
+.B	/etc/ld.so.preload
+.SH SEE ALSO
+.IR maemo-summoner (1)
+.SH COPYRIGHT
+Copyright (C) 2008 Nokia Corporation.
+.PP
+This is free software.  You may redistribute copies of it under the
+terms of the GNU General Public License v2 included with the software.
+There is NO WARRANTY, to the extent permitted by law.
