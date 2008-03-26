@@ -3,7 +3,7 @@
 # Script for calculating private memory usage for given process PID.
 # This file is part of sp-memusage.
 #
-# Copyright (C) 2006,2007 by Nokia Corporation
+# Copyright (C) 2006,2007,2008 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
