@@ -8,8 +8,8 @@ run-with-memusage \fIbinary\fP \fIarguments\fP
 wrapper library provided by glibc. Memusage collects statistics about
 application memory management during its runtime and reports them
 after the application exits. Please note that the application needs to
-exit normally in order to provide the statistics; for example, applications
-terminated with signals will not produce any statistics output. 
+exit normally or gathering of statistics fails; for example, applications
+terminated with various signals will not produce any statistics output. 
 
 The script runs given binary (with its arguments) under memusage
 using suitable options for the Maemo environment.  For example
