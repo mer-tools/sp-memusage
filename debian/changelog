@@ -1,3 +1,12 @@
+sp-memusage (1.0.8) unstable; urgency=low
+
+  * Mem-monitor-smaps shows now memory usage changes in addition to
+    totals.
+  * Argument checking improvements in mem-monitor-smaps
+  * Fixes: NB#84258
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue, 15 Apr 2008 16:59:08 +0300
+
 sp-memusage (1.0.7) unstable; urgency=low
 
   * New helper script (run-with-memusage) has been added.
