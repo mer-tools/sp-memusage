@@ -23,7 +23,7 @@
 
 cd /proc
 
-default_interval=5
+default_interval=2
 interval=$default_interval
 
 exit_with_error()
@@ -36,7 +36,7 @@ exit_with_error()
 	echo "usage: $name [-i <interval>] [-p <process>]"
 	echo
 	echo "<interval> is the time between screen updates, >1, default=$default_interval."
-	echo "<process> can be specified either by its PID or name."
+	echo "<process> can be specified either by its PID or name (if it's unique)."
 	echo
 	echo "example: $name -i 10 -p esd"
 	echo
@@ -66,7 +66,7 @@ while true; do
 					exit_with_error "no process with PID or name '$2'"
 				fi
 			else
-				# OK -> skip value checks
+				# PID found for name -> skip value checks
 				shift; shift
 				continue
 			fi
@@ -79,8 +79,8 @@ while true; do
 	if [ $# -eq 1 ]; then
 		exit_with_error "option '$1' is lacking a value"
 	fi
-	# invalid value?
-	if [ $2 -lt 1 ]; then
+	# non-numeric or zero/negative value?
+	if [ "${2#[0-9]}" == "$2" ] || [ $2 -lt 1 ]; then
 	 	exit_with_error "invalid option '$1' value '$2'"
 	fi
 	# next pair of args
@@ -92,15 +92,19 @@ system_memory()
 	echo -e "\nSystem memory usage information, including swap."
 	echo -e "(free = free+cached+buffers for RAM and swap)\n"
 	# headings
-	echo -e "time:\t\ttotal:\tfree:\tused:\t\tuse-%:"
+	echo -e "time:\t\ttotal:\tfree:\tused:\tchange:\t\tuse-%:"
 	# whole system free
+	prevused=0
 	while true; do
-		awk -v time=$(date +"%T") '
+		output=$(awk -v prevused=$prevused -v time=$(date +"%T") '
 		/(Mem|Swap)Total:/ { total += $2 }
 		/(Mem|Swap|^)(Free|Buffers|Cached):/ { free += $2 }
 		END { used = total-free;
-		      printf("%s\t%d\t%d\t%d kB\t%d%%\n", time, total, free, used, used*100/total)
-		}' meminfo
+		      if(prevused) change = used-prevused; else change = 0;
+		      printf("%s\t%d\t%d\t%d\t%+5d kB\t%d%%", time, total, free, used, change, used*100/total)
+		}' meminfo)
+		echo -e "$output"
+		prevused=$(echo -e "$output"|awk '{print $4}')
 		sleep $interval
        done
        exit 0
@@ -112,23 +116,27 @@ process_memory()
 	echo -e "\nSystem free and memory usage for $app[$pid] according to SMAPS."
 	echo -e "(without swap as SMAPS doesn't report swap correctly)\n"
 	# headings
-	echo -e "\t\tsystem\t\tprocess\t\t,--- dirty ---."
-	echo -e "time:\t\tfree:\t\tsize:\trss:\tshared:\tprivate:"
+	echo -e "\t\tsystem\t\tprocess\t\t,------ dirty --------."
+	echo -e "time:\t\tfree:\t\tsize:\trss:\tshared:\tprivate\tchange:"
 	# system and process memory
+	prevdirty=0
 	while true; do
 		# time + whole system free memory
 		awk -v time=$(date +"%T") '
 		/^(MemFree|Buffers|Cached):/ { free += $2 }
 		END { printf("%s\t%d\t\t", time, free) }' meminfo
 		# process memory usage according to SMAPS
-		awk '
+		output=$(awk -v prevdirty=$prevdirty '
 		/Size:/ { size += $2 }
 		/Rss:/ { rss += $2 }
 		/Shared_Dirty:/ { sdirty += $2 }
 		/Private_Dirty:/ { pdirty += $2 }
 		END {
-		printf("%d\t%d\t%d\t%d kB\n", size, rss, sdirty, pdirty)
-		}' $pid/smaps
+		if (prevdirty) change = pdirty-prevdirty; else change = 0;
+		printf("%d\t%d\t%d\t%d\t%+5d kB\n", size, rss, sdirty, pdirty, change)
+		}' $pid/smaps)
+		echo -e "$output"
+		prevdirty=$(echo -e "$output"|awk '{print $4}')
 		sleep $interval
 	done
 }
