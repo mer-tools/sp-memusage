@@ -103,8 +103,8 @@ system_memory()
 		      if(prevused) change = used-prevused; else change = 0;
 		      printf("%s\t%d\t%d\t%d\t%+5d kB\t%d%%", time, total, free, used, change, used*100/total)
 		}' meminfo)
-		echo -e "$output"
-		prevused=$(echo -e "$output"|awk '{print $4}')
+		echo "$output"
+		prevused=$(echo "$output"|awk '{print $4}')
 		sleep $interval
        done
        exit 0
@@ -116,27 +116,28 @@ process_memory()
 	echo -e "\nSystem free and memory usage for $app[$pid] according to SMAPS."
 	echo -e "(without swap as SMAPS doesn't report swap correctly)\n"
 	# headings
-	echo -e "\t\tsystem\t\tprocess\t\t,------ dirty --------."
-	echo -e "time:\t\tfree:\t\tsize:\trss:\tshared:\tprivate\tchange:"
+	echo -e "\t\tsystem\tprocess\t\tprivate\t,------ dirty ---------."
+	echo -e "time:\t\tfree:\tsize:\trss:\tclean:\tshared:\tprivate: change:"
 	# system and process memory
 	prevdirty=0
 	while true; do
 		# time + whole system free memory
 		awk -v time=$(date +"%T") '
 		/^(MemFree|Buffers|Cached):/ { free += $2 }
-		END { printf("%s\t%d\t\t", time, free) }' meminfo
+		END { printf("%s\t%d\t", time, free) }' meminfo
 		# process memory usage according to SMAPS
 		output=$(awk -v prevdirty=$prevdirty '
 		/Size:/ { size += $2 }
 		/Rss:/ { rss += $2 }
 		/Shared_Dirty:/ { sdirty += $2 }
+		/Private_Clean:/ { pclean += $2 }
 		/Private_Dirty:/ { pdirty += $2 }
 		END {
 		if (prevdirty) change = pdirty-prevdirty; else change = 0;
-		printf("%d\t%d\t%d\t%d\t%+5d kB\n", size, rss, sdirty, pdirty, change)
+		printf("%d\t%d\t%d\t%d\t%d\t%+5d kB\n", size, rss, pclean, sdirty, pdirty, change)
 		}' $pid/smaps)
-		echo -e "$output"
-		prevdirty=$(echo -e "$output"|awk '{print $4}')
+		echo "$output"
+		prevdirty=$(echo "$output"|awk '{print $5}')
 		sleep $interval
 	done
 }
