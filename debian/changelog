@@ -1,3 +1,10 @@
+sp-memusage (1.0.9) unstable; urgency=low
+
+  * mem-monitor-smaps: Private clean information has been added. 
+    Fixes: NB#84445
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 17 Apr 2008 16:46:46 +0300
+
 sp-memusage (1.0.8) unstable; urgency=low
 
   * Mem-monitor-smaps shows now memory usage changes in addition to
