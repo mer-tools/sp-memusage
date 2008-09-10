@@ -58,7 +58,8 @@ while true; do
 			interval=$2
 			;;
 		-p)
-			pid=$(pidof $2)
+			# last pid for given application?
+			pid=$(pidof $2|cut -d' ' -f1)
 			if [ -z "$pid" ]; then
 				if [ -d $2 ]; then
 					pid=$2
@@ -90,9 +91,9 @@ done
 system_memory()
 {
 	echo -e "\nSystem memory usage information, including swap."
-	echo -e "(free = free+cached+buffers for RAM and swap)\n"
+	echo -e "(avail = free+cached+buffers for RAM and swap)\n"
 	# headings
-	echo -e "time:\t\ttotal:\tfree:\tused:\tchange:\t\tuse-%:"
+	echo -e "time:\t\ttotal:\tavail:\tused:\tchange:\t\tuse-%:"
 	# whole system free
 	prevused=0
 	while true; do
@@ -113,11 +114,12 @@ system_memory()
 process_memory()
 {
 	app=$(tr '\0' ' '<$pid/cmdline|cut -d' ' -f1)
-	echo -e "\nSystem free and memory usage for $app[$pid] according to SMAPS."
+	echo -e "\nList available system memory and given process memory usage"
+       	echo "for $app[$pid] according to SMAPS."
 	echo -e "(without swap as SMAPS doesn't report swap correctly)\n"
 	# headings
-	echo -e "\t\tsystem\tprocess\t\tprivate\t,------ dirty ---------."
-	echo -e "time:\t\tfree:\tsize:\trss:\tclean:\tshared:\tprivate: change:"
+	echo -e "\t\tsystem\tprocess\t\tprivate\t/------ dirty ---------\\"
+	echo -e "time:\t\tavail:\tsize:\trss:\tclean:\tshared:\tprivate: change:"
 	# system and process memory
 	prevdirty=0
 	while true; do
@@ -147,3 +149,4 @@ if [ -d "$pid" ]; then
 else
 	system_memory
 fi
+

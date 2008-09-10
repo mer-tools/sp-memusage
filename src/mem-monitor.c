@@ -22,6 +22,11 @@
  *
  * History:
  *
+ * 17-Sep-2008 Eero Tamminen
+ * - Use term "avail" instead of "free" as although the shown amount
+ *   of memory is available for re-use, it isn't tehnically free
+ *   but mostly in use as buffers & caches
+ * 
  * 24-Aug-2006 Eero Tamminen
  * - add -% to usage and ':' to end of each header name
  * 
@@ -208,7 +213,7 @@ int main(const int argc, const char* argv[])
    /* We must print data always */
    nice(-19);
 
-   printf ("time:\t\ttotal:\tfree:\tused:\tuse-%%:\tstatus:\n");
+   printf ("time:\t\ttotal:\tavail:\tused:\tuse-%%:\tstatus:\n");
    while (1)
    {
        MEMUSAGE usage;
