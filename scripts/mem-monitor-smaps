@@ -23,6 +23,7 @@
 
 cd /proc
 
+only_changed=
 default_interval=2
 interval=$default_interval
 
@@ -33,12 +34,14 @@ exit_with_error()
 	echo "Show system and optionally process memory usage statistics"
 	echo "at a fixed interval."
 	echo
-	echo "usage: $name [-i <interval>] [-p <process>]"
+	echo "usage: $name [-c] [-i <interval>] [-p <process>]"
 	echo
-	echo "<interval> is the time between screen updates, >1, default=$default_interval."
-	echo "<process> can be specified either by its PID or name (if it's unique)."
+	echo "With -c, lines where change column has value zero are skipped."
+	echo "<interval> in secs between memory usage checks, >0, default=$default_interval."
+	echo "<process> can be specified either by its PID or name"
+	echo "(if it's not unique, latest PID will be used)."
 	echo
-	echo "example: $name -i 10 -p esd"
+	echo "example: $name -c -i 10 -p esd"
 	echo
 	if [ \! -z "$1" ]; then
 		echo "ERROR: $1"
@@ -54,6 +57,10 @@ while true; do
 	fi
 	# options...
 	case "$1" in
+		-c)	only_changed="yes"
+			shift
+			continue
+			;;
 		-i)
 			interval=$2
 			;;
@@ -104,8 +111,11 @@ system_memory()
 		      if(prevused) change = used-prevused; else change = 0;
 		      printf("%s\t%d\t%d\t%d\t%+5d kB\t%d%%", time, total, free, used, change, used*100/total)
 		}' meminfo)
-		echo "$output"
-		prevused=$(echo "$output"|awk '{print $4}')
+		current=$(echo "$output"|awk '{print $4}')
+		if [ -z "$only_changed" ] || [ "$current" != "$prevused" ]; then
+			prevused=$current
+			echo "$output"
+		fi
 		sleep $interval
        done
        exit 0
@@ -123,10 +133,10 @@ process_memory()
 	# system and process memory
 	prevdirty=0
 	while true; do
-		# time + whole system free memory
-		awk -v time=$(date +"%T") '
-		/^(MemFree|Buffers|Cached):/ { free += $2 }
-		END { printf("%s\t%d\t", time, free) }' meminfo
+		if [ \! -d "$pid" ]; then
+			echo "Process $pid disappeared. Exiting."
+			break
+		fi
 		# process memory usage according to SMAPS
 		output=$(awk -v prevdirty=$prevdirty '
 		/Size:/ { size += $2 }
@@ -138,8 +148,15 @@ process_memory()
 		if (prevdirty) change = pdirty-prevdirty; else change = 0;
 		printf("%d\t%d\t%d\t%d\t%d\t%+5d kB\n", size, rss, pclean, sdirty, pdirty, change)
 		}' $pid/smaps)
-		echo "$output"
-		prevdirty=$(echo "$output"|awk '{print $5}')
+		current=$(echo "$output"|awk '{print $5}')
+		if [ -z "$only_changed" ] || [ "$current" != "$prevdirty" ]; then
+			prevdirty=$current
+			# time + whole system free memory
+			awk -v time=$(date +"%T") '
+			/^(MemFree|Buffers|Cached):/ { free += $2 }
+			END { printf("%s\t%d\t", time, free) }' meminfo
+			echo "$output"
+		fi
 		sleep $interval
 	done
 }
@@ -149,4 +166,3 @@ if [ -d "$pid" ]; then
 else
 	system_memory
 fi
-
