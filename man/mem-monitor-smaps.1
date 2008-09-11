@@ -1,15 +1,17 @@
-.TH MEM-MONITOR-SMAPS 1 "2008-03-19" "sp-memusage"
+.TH MEM-MONITOR-SMAPS 1 "2008-09-11" "sp-memusage"
 .SH NAME
 mem-monitor-smaps - output process (or system) memory usage at given intervals
 .SH SYNOPSIS
-mem-monitor-smaps [\fI-i <interval>\fP] [\fI-p <process>\fP]
+mem-monitor-smaps [\fI-c\fP] [\fI-i <interval>\fP] [\fI-p <process>\fP]
 .SH DESCRIPTION
-\fImem-monitor-smaps\fP outputs (one-liner) process or system memory usage information from /proc/meminfo at given intervals. 
+\fImem-monitor-smaps\fP outputs (one-liner) process or system memory usage information from /proc/meminfo at given intervals. If the monitored process exits during monitoring, the mem-monitor-smaps will also exit.
 .SH OPTIONS
+.IP -c
+Only changed lines will be shown. Helps to cut down the amount of uninteresting output if the memory usage of process changes only occasionally.
 .IP -i
 The interval between memory usage information updates. By default the interval is 5 seconds.
 .IP -p
-The process ID (or name) which the tool should monitor. If this is omitted, the whole system memory usage is monitored instead.
+The process ID (or name) which the tool should monitor. If this is omitted, the whole system memory usage is monitored instead. If process name is given and multiple PIDs match it, the latest one will be monitored.
 .SH EXAMPLE OUTPUT
 Example \fImem-monitor-smaps\fP output (invoked with mem-monitor-smaps -p esd):
 .br
@@ -23,7 +25,7 @@ System free and memory usage for /usr/bin/esd[1004] according to SMAPS.
 .br
         system         process         ,--- dirty ---.
 .br
- time:    free:  size:   rss:    shared: private:
+ time:    avail:  size:   rss:    shared: private:
 .br
  05:10:28 42908  2168    640     0       212 kB
 .br

@@ -4,8 +4,10 @@ sp-memusage (1.0.10) unstable; urgency=low
     multiple matches. Fixes: NB#88304
   * As 'available' is more approriate than 'free' in the context of
     generated reports, use that instead.
+  * New option (-c) has been added to mem-monitor-smaps. Manual page has
+    been updated to include these changes.
 
- -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 11 Sep 2008 09:20:13 +0300
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 11 Sep 2008 14:52:29 +0300
 
 sp-memusage (1.0.9) unstable; urgency=low
 
