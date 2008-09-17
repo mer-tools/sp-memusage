@@ -20,8 +20,9 @@ Description: memory usage reporting tool
  Manual pages tell more about the scripts.
 
 Package: sp-memusage-dbg
+Priority: extra
 Architecture: any
-Depends: sp-memusage (=${Source-Version})
+Depends: sp-memusage (=${binary:Version})
 Description: Debug symbols for memusage
  Debug symbols for memusage tools and mallinfo library to use with
  tools such as GDB.
