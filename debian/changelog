@@ -1,3 +1,9 @@
+sp-memusage (1.0.11) unstable; urgency=low
+
+  * Some minor packaging issues reported by Lintian have been fixed.
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Wed, 17 Sep 2008 17:18:05 +0300
+
 sp-memusage (1.0.10) unstable; urgency=low
 
   * Mem-monitor-smaps now uses the latest pid returned when there are
