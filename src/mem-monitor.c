@@ -164,6 +164,7 @@ int memusage(MEMUSAGE* usage)
          { "MemFree:",   0 },
          { "Buffers:",   0 },
          { "Cached:",    0 },
+         { "SwapCached:",0 },
          { "SwapFree:",  0 }
       }; /* vals */
 
@@ -172,7 +173,7 @@ int memusage(MEMUSAGE* usage)
       {
          /* Discover memory information using loaded numbers */
          usage->total = vals[0].data + vals[1].data;
-         usage->free  = vals[2].data + vals[3].data + vals[4].data + vals[5].data;
+         usage->free  = vals[2].data + vals[3].data + vals[4].data + vals[5].data + vals[6].data;
          usage->used  = usage->total - usage->free;
          usage->util  = DIVIDE(100 * usage->used, usage->total);
 
