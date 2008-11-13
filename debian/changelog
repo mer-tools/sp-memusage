@@ -1,3 +1,9 @@
+sp-memusage (1.0.13) unstable; urgency=low
+
+  * Fixed a small issue with the changelog.
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 13 Nov 2008 15:47:07 +0200
+
 sp-memusage (1.0.12) unstable; urgency=low
 
   * SwapCached is now also taken in account while calculating memory
@@ -14,7 +20,7 @@ sp-memusage (1.0.11) unstable; urgency=low
 sp-memusage (1.0.10) unstable; urgency=low
 
   * Mem-monitor-smaps now uses the latest pid returned when there are
-    multiple matches. Fixes: NB#88304
+    multiple matches. Fixes NB #88304
   * As 'available' is more approriate than 'free' in the context of
     generated reports, use that instead.
   * New option (-c) has been added to mem-monitor-smaps. Manual page has
