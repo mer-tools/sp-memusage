@@ -1,11 +1,11 @@
 
-BINS = bin/mem-monitor
+BINS = bin/mem-monitor bin/mem-cpu-monitor
 LIBS = lib/mallinfo.so
 
 all: $(BINS) $(LIBS)
 
 clean:
-	$(RM) src/*.o *~ */*~
+	$(RM) src/*.o *~ */*~ $(BINS)
 
 distclean: clean
 	$(RM) $(BINS) $(LIBS)
@@ -17,6 +17,9 @@ lib/mallinfo.so: src/mallinfo.c
 	gcc -g -W -Wall -shared -O2 -fPIC  -Wl,-soname,mallinfo.so.0 -o $@ $^
 
 bin/mem-monitor: src/mem-monitor.c
+	gcc -g -DTESTING -W -Wall -O2 -o $@ $^
+
+bin/mem-cpu-monitor: src/mem-cpu-monitor.c
 	gcc -g -DTESTING -W -Wall -O2 -o $@ $^
 
 install:

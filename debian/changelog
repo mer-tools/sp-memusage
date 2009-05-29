@@ -1,3 +1,9 @@
+sp-memusage (1.1.0) unstable; urgency=low
+
+  * mem-cpu-monitor added. Fixes(NB#108493)
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Thu, 28 Apr 2009 15:18:40 +0200
+
 sp-memusage (1.0.13) unstable; urgency=low
 
   * Fixed a small issue with the changelog.
@@ -20,7 +26,7 @@ sp-memusage (1.0.11) unstable; urgency=low
 sp-memusage (1.0.10) unstable; urgency=low
 
   * Mem-monitor-smaps now uses the latest pid returned when there are
-    multiple matches. Fixes: NB#88304
+    multiple matches. Fixes NB #88304
   * As 'available' is more approriate than 'free' in the context of
     generated reports, use that instead.
   * New option (-c) has been added to mem-monitor-smaps. Manual page has
