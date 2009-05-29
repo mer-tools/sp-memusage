@@ -16,11 +16,11 @@ tags:
 lib/mallinfo.so: src/mallinfo.c
 	gcc -g -W -Wall -shared -O2 -fPIC  -Wl,-soname,mallinfo.so.0 -o $@ $^
 
-bin/mem-monitor: src/mem-monitor.c
-	gcc -g -DTESTING -W -Wall -O2 -o $@ $^
+bin/mem-monitor: src/mem-monitor.c src/mem-monitor-util.c
+	gcc -g -W -Wall -O2 -o $@ $+
 
-bin/mem-cpu-monitor: src/mem-cpu-monitor.c
-	gcc -g -DTESTING -W -Wall -O2 -o $@ $^
+bin/mem-cpu-monitor: src/mem-cpu-monitor.c src/mem-monitor-util.c
+	gcc -std=c99 -g -W -Wall -O2 -o $@ $+
 
 install:
 	install -d  $(DESTDIR)/usr/bin

@@ -128,7 +128,7 @@ static void mi_dump(int signo)
       const struct mallinfo mi = mallinfo();
 
       /* File to print */
-      FILE* file = fopen(s_path, "at");
+      FILE* file = fopen(s_path, "a");
 
       /* Dump header: check the file is opened correctly and it is not new */
       if (NULL == file || 0 == ftell(file))

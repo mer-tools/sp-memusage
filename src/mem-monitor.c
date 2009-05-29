@@ -1,7 +1,7 @@
 /* ========================================================================= *
  * File: mem-momitor.c, part of sp-memusage
  * 
- * Copyright (C) 2005-2008 by Nokia Corporation
+ * Copyright (C) 2005-2009 by Nokia Corporation
  * 
  * Author: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
  * Contact: Eero Tamminen <eero.tamminen@nokia.com>
@@ -21,6 +21,12 @@
  *    free, used, usage, total.
  *
  * History:
+ *
+ * 20-May-2009
+ * - Moved some code to mem-monitor-util.{ch}, that is now shared with
+ *   mem-monitor and mem-cpu-monitor.
+ * - Call fflush(stdout) after printing, to make sure that the lines get
+ *   flushed out of C library buffers when output is redirected to file.
  *
  * 17-Sep-2008 Eero Tamminen
  * - Use term "avail" instead of "free" as although the shown amount
@@ -54,6 +60,7 @@
 #include <ctype.h>
 
 #include "mem-monitor.h"
+#include "mem-monitor-util.h"
 
 /* ========================================================================= *
  * Definitions.
@@ -64,86 +71,6 @@
 
 /* Correct division of 2 unsigned values */
 #define DIVIDE(a,b)  (((a) + ((b) >> 1)) / (b))
-
-typedef struct
-{
-   const char* name;    /* /proc/meminfo parameter with ":" */
-   unsigned    data;    /* loaded value                     */
-} MEMINFO;
-
-/* ========================================================================= *
- * Local data.
- * ========================================================================= */
-
-/* ========================================================================= *
- * Local methods.
- * ========================================================================= */
-
-/* ------------------------------------------------------------------------- *
- * mu_load -- opens meminfo file and load values.
- * parameters:
- *    path - path to file to handle.
- *    vals - array of values to be handled.
- *    size - size of vals array.
- * returns: number of sucessfully loaded values.
- * ------------------------------------------------------------------------- */
-static unsigned mu_load(const char* path, MEMINFO* vals, unsigned size)
-{
-   unsigned counter = 0;
-   FILE*    meminfo = fopen(path, "rt");
-
-   if ( meminfo )
-   {
-      char line[256];
-
-      /* Load all lines in file */
-      while ( fgets(line, CAPACITY(line),meminfo) )
-      {
-         unsigned idx;
-
-         /* Search and setup parameter */
-         for (idx = 0; idx < size; idx++)
-         {
-            if ( line == strstr(line, vals[idx].name) )
-            {
-               /* Parameter has a format SomeName:\tValue, we expect that MEMINFO::name contains ":" */
-               vals[idx].data = (unsigned)strtoul(line + strlen(vals[idx].name) + 1, NULL, 0);
-               counter++;
-               break;
-            }
-         }
-      } /* while have data */
-
-      fclose(meminfo);
-   }
-
-   return counter;
-} /* mu_load */
-
-/* ------------------------------------------------------------------------- *
- * mu_check_flag -- opens specified flag and return true if it set on.
- * parameters:
- *    path - path to file to handle.
- * returns: 1 if flag is available and set on.
- * ------------------------------------------------------------------------- */
-static int mu_check_flag(const char* path)
-{
-   FILE* fp = fopen(path, "r");
-
-   if ( fp )
-   {
-      const int value = fgetc(fp);
-      fclose(fp);
-      return (value == '1');
-   }
-
-   return 0;
-} /* mu_check_flag */
-
-
-/* ========================================================================= *
- * Public methods.
- * ========================================================================= */
 
 /* ------------------------------------------------------------------------- *
  * memusage -- returns memory usage for current system in MEMUSAGE structure.
@@ -169,11 +96,11 @@ int memusage(MEMUSAGE* usage)
       }; /* vals */
 
       /* Load values from the meminfo file */
-      if ( CAPACITY(vals) == mu_load("/proc/meminfo", vals, CAPACITY(vals)) )
+      if ( CAPACITY(vals) == parse_proc_meminfo(vals, CAPACITY(vals)) )
       {
          /* Discover memory information using loaded numbers */
-         usage->total = vals[0].data + vals[1].data;
-         usage->free  = vals[2].data + vals[3].data + vals[4].data + vals[5].data + vals[6].data;
+         usage->total = vals[0].value + vals[1].value;
+         usage->free  = vals[2].value + vals[3].value + vals[4].value + vals[5].value + vals[6].value;
          usage->used  = usage->total - usage->free;
          usage->util  = DIVIDE(100 * usage->used, usage->total);
 
@@ -190,11 +117,6 @@ int memusage(MEMUSAGE* usage)
    /* Something wrong, shows as error */
    return -1;
 } /* memusage */
-
-/* ========================================================================= *
- * main function, just for testing purposes.
- * ========================================================================= */
-#ifdef TESTING
 
 int main(const int argc, const char* argv[])
 {
@@ -223,15 +145,17 @@ int main(const int argc, const char* argv[])
       if (0 == memusage(&usage))
       {
          const time_t tv = time(NULL);
-         struct tm*   ts = gmtime(&tv);
-         const char*  bg = (mu_check_flag("/sys/kernel/low_watermark") ? "BgKill" : "");
-         const char*  lm = (mu_check_flag("/sys/kernel/high_watermark") ? ",LowMem" : "");
+         struct tm*   ts = localtime(&tv);
+         const char*  bg = (check_flag("/sys/kernel/low_watermark") ? "BgKill" : "");
+         const char*  lm = (check_flag("/sys/kernel/high_watermark") ? ",LowMem" : "");
 
           printf ("%02u:%02u:%02u\t%u\t%u\t%u\t%u\t%s%s\n",
                      ts->tm_hour, ts->tm_min, ts->tm_sec,
                      usage.total, usage.free, usage.used, usage.util,
                      bg, lm
                   );
+
+	  fflush(stdout);
       }
       else
       {
@@ -245,8 +169,6 @@ int main(const int argc, const char* argv[])
    /* That is all */
    return 0;
 } /* main */
-
-#endif /* TESTING */
 
 /* ========================================================================= *
  *                    No more code in file mem-monitor.c                     *
