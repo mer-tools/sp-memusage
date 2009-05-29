@@ -174,10 +174,10 @@ str_truncate(const char* str, unsigned max)
 /* Returns the command line for the PID, by parsing /proc/pid/cmdline. It is
  * used as the process name for the PID, because for example with Maemo
  * Launcher the filename of the executable will not be meaningful. NULL bytes
- * from the strings are replaced with whitespace. This should give the same
- * result as:
+ * from the strings are replaced with whitespace and path is removed from
+ * the command name. Except for last, this should give the same result as:
  *
- *    $ cat /proc/self/cmdline | tr '\0' ' '
+ *    $ tr '\0' ' ' < /proc/self/cmdline
  *
  * The string is allocated dynamically, and must be manually freed. In case of
  * any error, NULL is returned.
@@ -186,13 +186,19 @@ static char*
 cmdline(unsigned pid)
 {
 	FILE* fp = NULL;
-	char* line = NULL;
+	char* line = NULL, *base;
 	size_t line_n = 0;
 	ssize_t read = 0, i = 0;
+
 	if (asprintf(&line, "/proc/%u/cmdline", pid) == -1) goto error;
 	if ((fp = fopen(line, "r")) == NULL) goto error;
 	line_n = strlen(line)+1;
 	if ((read = getline(&line, &line_n, fp)) < 1) goto error;
+	if ((base = strrchr(line, '/'))) {
+		int offset = base - line - 1;
+		memmove(line, base + 1, read - offset);
+		read -= offset;
+	}
 	for (i=0; i < read-1; ++i) {
 		if (line[i] == 0) line[i] = ' ';
 	}
