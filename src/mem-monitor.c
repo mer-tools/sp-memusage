@@ -22,9 +22,9 @@
  *
  * History:
  *
- * 20-May-2009
+ * 01-Jun-2009
  * - Moved some code to mem-monitor-util.{ch}, that is now shared with
- *   mem-monitor and mem-cpu-monitor.
+ *   mem-monitor and mem-cpu-monitor.  Removed mem-monitor.h.
  * - Call fflush(stdout) after printing, to make sure that the lines get
  *   flushed out of C library buffers when output is redirected to file.
  *
@@ -59,12 +59,20 @@
 #include <unistd.h>
 #include <ctype.h>
 
-#include "mem-monitor.h"
 #include "mem-monitor-util.h"
 
 /* ========================================================================= *
  * Definitions.
  * ========================================================================= */
+
+/* Structure that used to report about memory consumption */
+typedef struct
+{
+    size_t  total;     /* Total amount of memory in system: RAM + swap */
+    size_t  free;      /* Free memory in system, bytes                 */
+    size_t  used;      /* Used memory in system, bytes                 */
+    size_t  util;      /* Memory utilization in percents               */
+} MEMUSAGE;
 
 /* Compile-time array capacity calculation */
 #define CAPACITY(a)  (sizeof(a) / sizeof(*a))
@@ -79,7 +87,7 @@
  * returns:
  *    0 if values loaded successfuly OR negative error code.
  * ------------------------------------------------------------------------- */
-int memusage(MEMUSAGE* usage)
+static int memusage(MEMUSAGE* usage)
 {
    /* Check the pointer validity first */
    if ( usage )
