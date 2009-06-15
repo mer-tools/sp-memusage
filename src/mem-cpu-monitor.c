@@ -38,8 +38,8 @@
  *               _______________  ______  _____________________________  ______
  * _______  __  / system memory \/system\/PID 12345                    \/PID...
  * time:  \/BL\/  used:  change:  CPU-%:  clean:  dirty: change: CPU-%:  clean:
- * 06:18:07      1250296        0   1.00    1234    5421       0   1.00    1234
- * 06:18:09 B    1250300       +4   1.00    1234    5425      +4   1.00    1234
+ * 06:18:07 --   1250296        0   1.00    1234    5421       0   1.00    1234
+ * 06:18:09 B-   1250300       +4   1.00    1234    5425      +4   1.00    1234
  * 06:18:11 BL   1250274      -22  10.00    1234    5421      -4 100.00    1234
  * 22:22:22 BL 999999999 -8888888 666.66 7777777 7777777 -777777 666.66 7777777
  */
@@ -672,9 +672,9 @@ cpu_usage(unsigned total_ticks, unsigned idle_ticks)
 /* Formatted flags for the BL column:
  *
  *     ""        /sys/kernel/{low,high}_watermark not available.
- *     "  "      Low & high marks not set.
- *     "B "      Low mark set.
- *     " L"      Only high mark set, should not happen.
+ *     "--"      Low & high marks not set.
+ *     "B-"      Low mark set.
+ *     "-L"      Only high mark set, should not happen.
  *     "BL"      Both low & high marks set.
  */
 static const char*
@@ -688,15 +688,15 @@ mem_flags(bool watermarks_avail)
 		else        return "BL";
 	}
 	if (flag_low) {
-		if (colors) return COLOR_LOWMARK "B " COLOR_CLEAR;
-		else        return "B ";
+		if (colors) return COLOR_LOWMARK "B-" COLOR_CLEAR;
+		else        return "B-";
 	}
 	if (flag_high) {
 		// Only highmark set? Should not happen...
-		if (colors) return COLOR_HIGHMARK " L" COLOR_CLEAR;
-		else        return " L";
+		if (colors) return COLOR_HIGHMARK "-L" COLOR_CLEAR;
+		else        return "-L";
 	}
-	return "  ";
+	return "--";
 }
 
 int main(int argc, char** argv)
