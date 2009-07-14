@@ -7,6 +7,7 @@
 /usr/bin/run-with-mallinfo
 /usr/bin/run-with-memusage
 /usr/share/man/man1/mem-monitor.1
+/usr/share/man/man1/mem-cpu-monitor.1
 /usr/share/man/man1/mem-monitor-smaps.1
 /usr/share/man/man1/mem-smaps-private.1
 /usr/share/man/man1/mem-dirty-code-pages.1

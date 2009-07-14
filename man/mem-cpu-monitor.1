@@ -1,0 +1,129 @@
+.TH MEM-CPU-MONITOR 1 "2009-06-22" "sp-memusage"
+.SH NAME
+mem-cpu-monitor - output system and process memory and cpu usage at given intervals
+.SH SYNOPSIS
+mem-cpu-monitor [\fIinterval\fP] [[\fIPID\fP] [\fIPID...\fP]]
+.SH DESCRIPTION
+\fImem-cpu-monitor\fP outputs (one-liner) system and process memory and CPU
+usage information, at intervals defined by \fIinterval\fP (default three
+seconds). The processes to be monitored are specified by their process ID
+numbers (PIDs). Any number of PIDs may be specified.
+
+Monitoring is continued until explicitly interrupted, for example by issuing
+SIGTERM via Ctrl-C.
+
+.SH OPTIONS
+.TP 24
+-p, --pid=\fIPID\fP
+Monitor process specified by \fIPID\fP. The existence of the process is not
+checked, and the death of the process does \fBnot\fP interrupt
+\fImem-cpu-monitor\fP.
+.TP 24
+-f, --file=FILE
+Redirect output to \fIFILE\fP.
+.TP 24
+    --no-colors
+Never use colors. See section \fBTERMINAL TWEAKS\fP for more details.
+.TP 24
+    --self
+Adds this instance of \fImem-cpu-monitor\fP to the list of monitored processes.
+.TP 24
+-h, --help
+Display a brief help message.
+
+.SH TERMINAL TWEAKS
+\fImem-cpu-monitor\fP contains a few tweaks for terminal users, that are
+activated only when a terminal is detected (\fBisatty\fP(3) returns 1 for the
+output file descriptor):
+.IP \[bu]
+Alternating process columns are highlighted by changing the foreground color.
+.IP \[bu]
+The headers are reprinted after printing screenful of updates.
+
+.SH ARCHITECTURE SPECIFIC NOTES
+\fImem-cpu-monitor\fP supports monitoring of so called memory watermarks
+exposed in \fBsysfs\fP by the kernel. An additional column titled \fBBL\fP will
+be displayed in this case, that will display \fBB\fP and \fBL\fP, when the low
+and high watermarks have been respectively reached, and \fB--\fP otherwise.
+
+.SH EXAMPLE INVOCATIONS
+.TP
+$ mem-cpu-monitor
+Starts monitoring system memory and CPU usage. Report is given at the default
+interval of three seconds.
+.TP
+$ mem-cpu-monitor 2 $(pidof bash)
+Starts monitoring the memory and CPU usage of the system and all bash shells.
+Report is given every two seconds.
+.TP
+$ mem-cpu-monitor -p 1234 -p 5678
+Starts monitoring the memory and CPU usage of the system and the processes
+identified with IDs 1234 and 5678. Report is given at the default interval of
+three seconds.
+
+.SH EXAMPLE OUTPUT
+.nf
+$ mem-cpu-monitor 1
+System total memory: 2074040 kB RAM, 2650684 kB swap
+           _______________  ______
+________  / system memory \\/system\\
+time:   \\/  used:  change:  CPU-%:
+11:35:42    473828       +0   0.00
+11:35:43    473868      +40   3.94
+11:35:44    473868       +0   4.74
+11:35:45    473876       +8   2.45
+11:35:46    473876       +0   3.38
+.fi
+
+.nf
+$ mem-cpu-monitor -p $(pidof gvim)
+System total memory: 2074040 kB RAM, 2650684 kB swap
+PID  3086: gvim mem-cpu-monitor.1
+           _______________  ______  _____________________________
+________  / system memory \\/system\\/PID 3086  gvim mem-cpu-mon...\\
+time:   \\/  used:  change:  CPU-%:  clean:  dirty: change: CPU-%:
+12:04:43    474988       +0   0.00    1564    3292      +0   0.00
+12:04:46    475264     +276   3.72    1564    3292      +0   0.00
+12:04:49    475296      +32   3.06    1564    3292      +0   0.00
+12:04:52    475784     +488   3.88    1564    3292      +0   0.00
+.fi
+
+.nf
+$ mem-cpu-monitor
+System total memory: 246744 kB RAM, 0 kB swap
+              _______________  ______
+_______  __  / system memory \\/system\\
+time:  \\/BL\\/  used:  change:  CPU-%:
+08:07:11 --   137264       +0   0.00
+08:07:14 --   137272       +8  15.13
+08:07:17 --   137264       -8   0.33
+08:07:20 B-   188452   +51188  21.19
+08:07:23 B-   188452       +0   1.67
+08:07:26 B-   195996    +7544  55.45
+08:07:30 BL   233568   +37572 100.00
+08:07:33 BL   226032    -7536  81.73
+08:07:36 BL   221484    -4548  83.77
+08:07:39 --   119880  -101604 100.00
+08:07:42 --   126560    +6680 100.00
+.fi
+
+.SH FILES
+\fI/proc/meminfo\fP,
+\fI/proc/stat\fP,
+\fI/proc/pid/cmdline\fP,
+\fI/proc/pid/smaps\fP,
+\fI/proc/pid/stat\fP,
+\fI/proc/pid/status\fP,
+\fI/sys/kernel/low_watermark\fP,
+\fI/sys/kernel/high_watermark\fP
+
+.SH SEE ALSO
+.IR proc (5), 
+.IR memusage (1),
+.IR isatty (3)
+.SH COPYRIGHT
+Copyright (C) 2005-2009 Nokia Corporation.
+.PP
+This is free software.  You may redistribute copies of it under the
+terms of the GNU General Public License v2 included with the software.
+There is NO WARRANTY, to the extent permitted by law.

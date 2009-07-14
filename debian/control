@@ -15,9 +15,11 @@ Description: memory usage reporting tool
    how much allocated and freed (but not returned to system) memory is
    in the C-library memory pool for the process.  You can use this to
    detect memory fragmentation.
- - Memusage just outputs system memory usage information from
-   /proc/meminfo at given intervals.
- Manual pages tell more about the scripts.
+ - mem-*monitor* tools output system and process memory (and CPU) usage
+   overviews at specified intervals.
+ - There are also some extra scripts to get memory usage details from
+   processes.
+ Manual pages tell more about the tools and scripts.
 
 Package: sp-memusage-dbg
 Priority: extra
