@@ -1,3 +1,12 @@
+sp-memusage (1.1.4) unstable; urgency=low
+
+  * mem-cpu-monitor:
+   + mem-cpu-monitor: report CPU speed
+   + mem-cpu-monitor: implementation of options that make it output info only
+     when something changes
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Mon, 26 Oct 2009 10:39:35 +0200
+
 sp-memusage (1.1.3) unstable; urgency=low
 
   * Add a manual page for mem-cpu-monitor. Fixes(NB#120058)
