@@ -33,26 +33,23 @@
  * ========================================================================= */
 
 /* System total memory: 262144 kB RAM, 768000 kB swap
- * PID 12345: Xorg -option value
- * PID 23456: foobar -option value
- *               _______________  ______  _____________________________  ______
- * _______  __  / system memory \/system\/PID 12345                    \/PID...
- * time:  \/BL\/  used:  change:  CPU-%:  clean:  dirty: change: CPU-%:  clean:
- * 06:18:07 --   1250296        0   1.00    1234    5421       0   1.00    1234
- * 06:18:09 B-   1250300       +4   1.00    1234    5425      +4   1.00    1234
- * 06:18:11 BL   1250274      -22  10.00    1234    5421      -4 100.00    1234
- * 22:22:22 BL 999999999 -8888888 666.66 7777777 7777777 -777777 666.66 7777777
+ * PID  1547: browser
+ *                _______________  ____________  _____________________________
+ * ________  __  / system memory \/ system CPU \/PID 1547  browser         ...\
+ * time:   \/BL\/  used:  change:     %:  MHz:   clean:  dirty: change: CPU-%:
+ * 02:22:31  --   143272       +0   0.00     0    1252    2784      +0   0.00
+ * 02:22:34  --   143272       +0   1.32   253    1252    2784      +0   0.00
+ * 02:22:37  --   143332      +60   1.98   253    1252    2784      +0   0.00
+ * 02:22:40  --   143332       +0   2.30   252    1252    2784      +0   0.00
  */
 
 /* Output format without memory flags:
  *
- *            _______________  ______  _____________________________  ______
- * ________  / system memory \/system\/PID 12345                    \/PID...
- * time:   \/  used:  change:  CPU-%:  clean:  dirty: change: CPU-%:  clean:
- * 06:18:07   1250296        0   1.00    1234    5421       0   1.00    1234
- * 06:18:09   1250300       +4   1.00    1234    5425      +4   1.00    1234
- * 06:18:11   1250274      -22  10.00    1234    5421      -4 100.00    1234
- * 22:22:22 999999999 -8888888 666.66 7777777 7777777 -777777 666.66 7777777
+ *             _______________  ____________  _____________________________
+ * _________  / system memory \/ system CPU \/PID 6603  ssh root@192.168...\
+ * time:    \/  used:  change:     %:  MHz:   clean:  dirty: change: CPU-%:
+ * 12:28:32    498324       +0   0.00     2       0     460      +0   0.00
+ * 12:28:35    498084     -240   8.25   805       0     460      +0   0.00
  */
 
 #define _GNU_SOURCE
@@ -137,6 +134,141 @@ typedef struct {
 	size_t cputicks_total;
 	size_t cputicks_change;
 } monitored_process_t;
+
+
+/*
+ *  CPU stats monitoring
+ */
+
+#define CPU_STATS_SOURCE  "/sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state"
+
+/**
+ * The cpu stats data record.
+ * This structure holds how many ticks cpu has spent at the
+ * specifc frequency.
+ */
+typedef struct _cpu_stats_record_t {
+  int freq;
+  int ticks;
+  struct _cpu_stats_record_t* next;
+} cpu_stats_record_t;
+
+typedef cpu_stats_record_t* cpu_stats_t;
+
+static cpu_stats_t cpu_stats[2] = {NULL, NULL};
+static cpu_stats_t* cpu_stats_start = &cpu_stats[0];
+static cpu_stats_t* cpu_stats_end = &cpu_stats[1];
+
+/**
+ * Retrieves cpu stats record for the specified frequency.
+ *
+ * A new cpu stat record will be added, if the cpu stats holds no
+ * records for the specified frequency.
+ * @param stats[in]   the cpu stats.
+ * @param freq[in]    the cpu frequency.
+ * @return            the cpu stat record (or NULL if no records were found and
+ *                    failed to add a new one).
+ */
+static cpu_stats_record_t*
+cpu_stats_get_freq_record(cpu_stats_t* stats, int freq) {
+  cpu_stats_record_t** new_rec = stats;
+  cpu_stats_record_t* rec = *stats;
+
+  while (rec && rec->freq != freq) {
+    if (!rec->next) {
+      new_rec = &rec->next;
+      break;
+    }
+    rec = rec->next;
+  }
+  if (!(*new_rec)) {
+    *new_rec = rec = malloc(sizeof(cpu_stats_record_t));
+    if (!rec) return NULL;
+    rec->freq = freq;
+    rec->ticks = 0;
+    rec->next = NULL;
+  }
+  return rec;
+}
+
+/**
+ * Releases cpu stats data structures.
+ *
+ * @param stats[in]   the cpu stats.
+ * @return
+ */
+static void
+cpu_stats_clear(cpu_stats_t* stats) {
+  cpu_stats_record_t* rec = *stats;
+  while (rec) {
+    cpu_stats_t tmp = rec->next;
+    free(rec);
+    rec = tmp;
+  }
+  *stats = NULL;
+}
+
+/**
+ * Sets ticks value for the specified frequency.
+ *
+ * @param stats[in]   the cpu stats.
+ * @param freq[in]    the cpu frequency.
+ * @param ticks[in]   the cpu ticks spent in the specified frequency.
+ */
+static void
+cpu_stats_set_freq_ticks(cpu_stats_t* stats, int freq, int ticks) {
+  cpu_stats_record_t* record = cpu_stats_get_freq_record(stats, freq);
+  if (record) {
+    record->ticks = ticks;
+  }
+}
+
+
+/**
+ * Calculates average cpu frequency between two cpu stats snapshots.
+ *
+ * @param start[in]   the starting cpu snapshot.
+ * @param end[in]     the ending cpu snapshot.
+ * @return            the average cpu frequency.
+ */
+static int
+cpu_stats_get_avg_diff(cpu_stats_t* start, cpu_stats_t* end) {
+  cpu_stats_record_t* rec_end = *end;
+  int total_freq = 0;
+  int total_time = 0;
+  while (rec_end) {
+    cpu_stats_record_t* record = cpu_stats_get_freq_record(start, rec_end->freq);
+    if (record) {
+      int diff = rec_end->ticks - record->ticks;
+      total_time += diff;
+      total_freq += rec_end->freq * diff;
+    }
+    rec_end = rec_end->next;
+  }
+  return total_time ? total_freq / total_time : 0;
+}
+
+/**
+ * Parses the cpu stats file and creates cpu stats snapshot.
+ *
+ * @param stats[in, out]    the cpu stats.
+ * @return
+ */
+static void
+cpu_stats_take_snapshot(cpu_stats_t* stats) {
+  FILE* fp = fopen(CPU_STATS_SOURCE, "r");
+  if (fp) {
+    char line[128];
+    int freq, ticks;
+    while (fgets(line, sizeof(line), fp)) {
+      if (sscanf(line, "%d %d", &freq, &ticks) == 2) {
+        cpu_stats_set_freq_ticks(stats, freq, ticks);
+      }
+    }
+    fclose(fp);
+  }
+}
+
 
 /* Does @s1 begin with @s2?
  */
@@ -467,7 +599,7 @@ print_headers(monitored_process_t* mprocs,
 {
 	unsigned i;
 	// First line.
-	fprintf(output, "%s           _______________  ______ ",
+	fprintf(output, "%s            _______________  ____________ ",
 			watermarks_avail ? "   " : "");
 	for (i=0; i < mprocs_cnt; ++i) {
 		fprintf(output, "%s _____________________________ %s",
@@ -475,7 +607,7 @@ print_headers(monitored_process_t* mprocs,
 	}
 	fprintf(output, "\n");
 	// Second line.
-	fprintf(output, "_______%s / system memory \\/system\\",
+	fprintf(output, "________%s / system memory \\/ system CPU \\",
 			watermarks_avail ? "  __ " : "_ ");
 	for (i=0; i < mprocs_cnt; ++i) {
 		fprintf(output, "%s/PID %-5u %-19s\\%s",
@@ -486,7 +618,7 @@ print_headers(monitored_process_t* mprocs,
 	}
 	fprintf(output, "\n");
 	// Third line.
-	fprintf(output, "time:%s\\/  used:  change:  CPU-%%:",
+	fprintf(output, "time: %s\\/  used:  change:     %%:  MHz: ",
 			watermarks_avail ? "  \\/BL" : "   ");
 	for (i=0; i < mprocs_cnt; ++i) {
 		fprintf(output, "%s  clean:  dirty: change: CPU-%%:%s",
@@ -684,19 +816,19 @@ mem_flags(bool watermarks_avail)
 	const bool flag_low  = check_flag(watermark_low);
 	const bool flag_high = check_flag(watermark_high);
 	if (flag_low && flag_high) {
-		if (colors) return COLOR_HIGHMARK "BL" COLOR_CLEAR;
-		else        return "BL";
+		if (colors) return COLOR_HIGHMARK " BL" COLOR_CLEAR;
+		else        return " BL";
 	}
 	if (flag_low) {
-		if (colors) return COLOR_LOWMARK "B-" COLOR_CLEAR;
-		else        return "B-";
+		if (colors) return COLOR_LOWMARK " B-" COLOR_CLEAR;
+		else        return " B-";
 	}
 	if (flag_high) {
 		// Only highmark set? Should not happen...
-		if (colors) return COLOR_HIGHMARK "-L" COLOR_CLEAR;
-		else        return "-L";
+		if (colors) return COLOR_HIGHMARK " -L" COLOR_CLEAR;
+		else        return " -L";
 	}
-	return "--";
+	return " --";
 }
 
 int main(int argc, char** argv)
@@ -710,6 +842,8 @@ int main(int argc, char** argv)
 	unsigned mprocs_cnt = 0;
 	bool watermarks_avail = false, is_atty = false;
 	unsigned rows=0, lines_printed=0;
+	cpu_stats_t* cpu_stats_swap;
+
 	parse_cmdline(argc, argv, &mprocs, &mprocs_cnt, &sleep_interval);
 	(void) nice(-19);
 	if (!system_memory_totals(&ram_total, &swap_total)) {
@@ -745,6 +879,9 @@ int main(int argc, char** argv)
 	// Install our signal handler, unless someone specifically wanted
 	// SIGINT to be ignored.
 	if (signal(SIGINT, quit_app) == SIG_IGN) signal(SIGINT, SIG_IGN);
+	/* initialize cpu stats */
+	cpu_stats_take_snapshot(cpu_stats_start);
+
 	while (!quit) {
 		const time_t t = time(NULL);
 		const struct tm* ts = localtime(&t);
@@ -759,6 +896,19 @@ int main(int argc, char** argv)
 			ram_used, (int)ram_used - (int)prev_ram_used,
 			cpu_usage(cpu_ticks_total-cpu_ticks_total_prev,
 			          cpu_ticks_idle-cpu_ticks_idle_prev));
+
+    /* Print cpu stats. */
+    cpu_stats_take_snapshot(cpu_stats_end);
+    fprintf(output, "%6d", cpu_stats_get_avg_diff(cpu_stats_start, cpu_stats_end) / 1000);
+    /* Because cpu stats can only grow we can simply swap between the start and end stats.
+     * The end stats will become the start stats and the old start stats data structures will be used
+     * to take new cpu stats snapshot, making it the new end stats.
+     */
+    cpu_stats_swap = cpu_stats_end;
+    cpu_stats_end = cpu_stats_start;
+    cpu_stats_start = cpu_stats_swap;
+
+    /* print process stats */
 		for (unsigned i=0; i < mprocs_cnt; ++i) {
 			fprintf(output, "%s %7u %7u %+7d %6.2f%s",
 				c_begin(i),
@@ -770,6 +920,7 @@ int main(int argc, char** argv)
 				           mprocs[i].cputicks_change),
 				c_end(i));
 		}
+
 		fprintf(output, "\n");
 		fflush(output);
 		sleep(sleep_interval);
@@ -797,6 +948,10 @@ int main(int argc, char** argv)
 	}
 	free(mprocs);
 	free(dynbuf);
+
+	/* release cpu stats data */
+	cpu_stats_clear(&cpu_stats[0]);
+	cpu_stats_clear(&cpu_stats[1]);
 }
 
 /* ========================================================================= *
