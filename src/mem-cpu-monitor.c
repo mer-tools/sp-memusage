@@ -68,6 +68,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <math.h>
 
 #include "mem-monitor-util.h"
 
@@ -80,6 +81,30 @@ static const char watermark_high[] = "/sys/kernel/high_watermark";
 
 // Output to stdout by default, otherwise to file given by user.
 static FILE* output = NULL;
+
+// Bitmask holding a number of option flags
+static unsigned int 	option_flags = 0;
+
+static int 				sys_mem_change_threshold = 0;
+static float 			sys_cpu_change_threshold = 0.0f;
+
+static bool 			do_print_report_default = true;
+
+// Flags should have values of powers of 2
+enum OPTION_VALUE_FLAGS {
+	OF_PROC_MEM_CHANGES_ONLY 	= 1,
+	OF_PROC_CPU_CHANGES_ONLY 	= 2,
+	OF_SYS_MEM_CHANGES_ONLY 	= 4,
+	OF_SYS_CPU_CHANGES_ONLY 	= 8,
+	OF_INTERVAL_OPTION_SET 		= 16
+};
+// Adds a flag to the bitmask
+#define ADD_OPTION_VALUE_FLAG(option_flags_var, value) \
+	option_flags_var |= (value);
+	
+// Checks whether a flag is set in the bitmask
+#define IS_OPTION_VALUE_FLAG_SET(option_flags_var, value) \
+	( option_flags_var & value ? 1 : 0 )
 
 // Dynamic buffer to be used with getline().
 static char* dynbuf = NULL;
@@ -671,7 +696,7 @@ usage()
 		"and (optionally) the status of some processes.\n"
 		"\n"
 		"Usage:\n"
-		"        %s [interval] [[PID] [PID...]]\n"
+		"        %s [OPTIONS] [interval] [[PID] [PID...]]\n"
 		"\n"
 		"Default output interval is %u seconds.\n"
 		"\n"
@@ -679,6 +704,11 @@ usage()
 		"     -f, --file=FILE       Write to FILE instead of stdout.\n"
 		"         --no-colors       Disable colors.\n"
 		"         --self            Monitor this instance of %s.\n"
+		"     -i, --interval=INTERVAL         Data acquisition interval.\n"
+		"     -C, --system-cpu-change=THRESHOLD         Perform output only when the system cpu usage is greater then the specified threshold.\n"
+		"     -M, --system-mem-change=THRESHOLD          Perform output only when the system memory change is greater then the specified threshold.\n"
+		"     -c, --cpu-changes          Perform output only when there was any change in cpu usage for any process being monitored.\n"
+		"     -m, --mem-changes          Perform output only when there was any change in memory usage for any process being monitored.\n"
 		"     -h, --help            Display this help.\n"
 		"\n"
 		"Examples:\n"
@@ -702,6 +732,11 @@ static struct option long_opts[] = {
 	{"file", 1, 0, 'f'},
 	{"pid", 1, 0, 'p'},
 	{"self", 0, 0, 1002},
+	{"mem-changes", 0, 0, 'm'},
+	{"cpu-changes", 0, 0, 'c'},
+	{"system-cpu-change", 1, 0, 'C'},
+	{"system-mem-change", 1, 0, 'M'},
+	{"interval", 1, 0, 'i'},
 	{0,0,0,0}
 };
 
@@ -714,7 +749,7 @@ parse_cmdline(int argc, char** argv,
 	char* output_path = NULL;
 	unsigned cnt=0, cap=0;
 	monitored_process_t* m = NULL;
-	while ((opt = getopt_long(argc, argv, "p:hf:", long_opts, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "p:hf:mcM:C:i:", long_opts, NULL)) != -1) {
 		switch (opt) {
 		case 'f':
 			output_path = strdup(optarg);
@@ -730,6 +765,33 @@ parse_cmdline(int argc, char** argv,
 			break;
 		case 'p':
 			monitor_pid(atoi(optarg), &m, &cnt, &cap);
+			break;
+		case 'm':
+			ADD_OPTION_VALUE_FLAG(option_flags, OF_PROC_MEM_CHANGES_ONLY);
+			break;
+		case 'c':
+			ADD_OPTION_VALUE_FLAG(option_flags, OF_PROC_CPU_CHANGES_ONLY);
+			break;
+		case 'M':
+			ADD_OPTION_VALUE_FLAG(option_flags, OF_SYS_MEM_CHANGES_ONLY);
+			sys_mem_change_threshold = atoi(optarg);
+			do_print_report_default = false;
+			break;
+		case 'C':
+			ADD_OPTION_VALUE_FLAG(option_flags, OF_SYS_CPU_CHANGES_ONLY);
+			if (!sscanf(optarg, "%f", &sys_cpu_change_threshold) ) {
+				fprintf(stderr, "ERROR: invalid CPU change threshold for the system\n");
+				exit(1);
+			}
+			do_print_report_default = false;
+			break;
+		case 'i':
+			if (sscanf(optarg, "%u", sleep_interval) != 1 ||
+				sleep_interval == 0u) {
+				fprintf(stderr, "ERROR: invalid interval\n");
+				exit(1);
+			}
+			ADD_OPTION_VALUE_FLAG(option_flags, OF_INTERVAL_OPTION_SET);
 			break;
 		default:
 			usage();
@@ -748,10 +810,18 @@ parse_cmdline(int argc, char** argv,
 		output = stdout;
 	}
 	if (optind < argc) {
-		if (sscanf(argv[optind], "%u", sleep_interval) != 1 ||
-		    sleep_interval == 0u) {
+		// read interval argument
+		unsigned _interval = 0;
+		if (sscanf(argv[optind], "%u", &_interval) != 1 ||
+			sleep_interval == 0u) {
 			fprintf(stderr, "ERROR: invalid interval\n");
 			exit(1);
+		}
+		// only overwrite interval if interval is not already specified by -i option
+		if (!IS_OPTION_VALUE_FLAG_SET(option_flags, OF_INTERVAL_OPTION_SET) ) {
+			 *sleep_interval = _interval;
+		} else {
+			fprintf(stderr, "WARNING: interval argument '%u' is ignored as '-i option' is specified\n", _interval);
 		}
 		++optind;
 	}
@@ -762,6 +832,14 @@ parse_cmdline(int argc, char** argv,
 	if (cnt) {
 		*mprocs = m;
 		*mprocs_cnt = cnt;
+	}
+	
+	// determine if no printing needs to be done by default 
+	if (*mprocs_cnt > 0 && 
+		(IS_OPTION_VALUE_FLAG_SET(option_flags, OF_PROC_MEM_CHANGES_ONLY) || 
+		 IS_OPTION_VALUE_FLAG_SET(option_flags, OF_PROC_CPU_CHANGES_ONLY) ) ) {
+
+		do_print_report_default = false;
 	}
 }
 
@@ -871,6 +949,7 @@ int main(int argc, char** argv)
 	if (!is_atty) colors = false;
 	fprintf(output, "System total memory: %u kB RAM, %u kB swap\n",
 			ram_total, swap_total);
+	
 	(void) print_process_names(mprocs, mprocs_cnt);
 	lines_printed += print_headers(mprocs, mprocs_cnt, watermarks_avail);
 	// Disable header reprinting if we're printing to console, or if the
@@ -879,50 +958,87 @@ int main(int argc, char** argv)
 	// Install our signal handler, unless someone specifically wanted
 	// SIGINT to be ignored.
 	if (signal(SIGINT, quit_app) == SIG_IGN) signal(SIGINT, SIG_IGN);
-	/* initialize cpu stats */
-	cpu_stats_take_snapshot(cpu_stats_start);
+	
+	bool do_print_report;
+	
+	unsigned sys_ram_used_last_printed = ram_used;
+	float sys_cpu_usage_last_printed = cpu_usage(cpu_ticks_total-cpu_ticks_total_prev, cpu_ticks_idle-cpu_ticks_idle_prev);
+	
+  /* initialize cpu stats */
+  cpu_stats_take_snapshot(cpu_stats_start);
 
 	while (!quit) {
+
+		do_print_report = do_print_report_default;
+		
 		const time_t t = time(NULL);
 		const struct tm* ts = localtime(&t);
 		if (!ts) {
 			fprintf(stderr, "ERROR: localtime() failed\n");
 			return 1;
 		}
-		fprintf(output,
-			"%02u:%02u:%02u %s%9u %+8d %6.2f",
-			ts->tm_hour, ts->tm_min, ts->tm_sec,
-			mem_flags(watermarks_avail),
-			ram_used, (int)ram_used - (int)prev_ram_used,
-			cpu_usage(cpu_ticks_total-cpu_ticks_total_prev,
-			          cpu_ticks_idle-cpu_ticks_idle_prev));
+		// check system for changes in mem and cpu
+		int _sys_ram_change = (int)ram_used - (int)sys_ram_used_last_printed;
+		float _sys_cpu_usage = cpu_usage(cpu_ticks_total-cpu_ticks_total_prev, cpu_ticks_idle-cpu_ticks_idle_prev);
+		float _sys_cpu_usage_change = _sys_cpu_usage - sys_cpu_usage_last_printed; 
+		
+		if ( (IS_OPTION_VALUE_FLAG_SET(option_flags, OF_SYS_MEM_CHANGES_ONLY) && abs(_sys_ram_change) >= sys_mem_change_threshold) || 
+			(IS_OPTION_VALUE_FLAG_SET(option_flags, OF_SYS_CPU_CHANGES_ONLY) && fabs(_sys_cpu_usage_change) >= sys_cpu_change_threshold) ) {
 
-    /* Print cpu stats. */
-    cpu_stats_take_snapshot(cpu_stats_end);
-    fprintf(output, "%6d", cpu_stats_get_avg_diff(cpu_stats_start, cpu_stats_end) / 1000);
-    /* Because cpu stats can only grow we can simply swap between the start and end stats.
-     * The end stats will become the start stats and the old start stats data structures will be used
-     * to take new cpu stats snapshot, making it the new end stats.
-     */
-    cpu_stats_swap = cpu_stats_end;
-    cpu_stats_end = cpu_stats_start;
-    cpu_stats_start = cpu_stats_swap;
-
-    /* print process stats */
-		for (unsigned i=0; i < mprocs_cnt; ++i) {
-			fprintf(output, "%s %7u %7u %+7d %6.2f%s",
-				c_begin(i),
-				mprocs[i].mem_clean,
-				mprocs[i].mem_dirty,
-				mprocs[i].mem_change,
-				cpu_usage(cpu_ticks_total-cpu_ticks_total_prev,
-				          (cpu_ticks_total-cpu_ticks_total_prev) -
-				           mprocs[i].cputicks_change),
-				c_end(i));
+			do_print_report = true;
 		}
+		
+		if ( !do_print_report ) {
+			// check all monitored processes for changes in mem and cpu
+			for (unsigned i = 0; i < mprocs_cnt; ++i) {
+				if ( (IS_OPTION_VALUE_FLAG_SET(option_flags, OF_PROC_MEM_CHANGES_ONLY) && mprocs[i].mem_change != 0) ||
+					 
+					 (IS_OPTION_VALUE_FLAG_SET(option_flags, OF_PROC_CPU_CHANGES_ONLY) && mprocs[i].cputicks_change != 0.0f) ) {
+					
+					do_print_report = true;
+					break;
+				}
+			}
+		}
+			
+		// print report for the system
+		if (do_print_report) {
+			fprintf(output,
+				"%02u:%02u:%02u %s%9u %+8d %6.2f",
+				ts->tm_hour, ts->tm_min, ts->tm_sec,
+				mem_flags(watermarks_avail),
+				ram_used, _sys_ram_change, _sys_cpu_usage);
 
-		fprintf(output, "\n");
-		fflush(output);
+	    /* Print cpu stats. */
+	    cpu_stats_take_snapshot(cpu_stats_end);
+	    fprintf(output, "%6d", cpu_stats_get_avg_diff(cpu_stats_start, cpu_stats_end) / 1000);
+	    /* Because cpu stats can only grow we can simply swap between the start and end stats.
+	     * The end stats will become the start stats and the old start stats data structures will be used
+	     * to take new cpu stats snapshot, making it the new end stats.
+	     */
+	    cpu_stats_swap = cpu_stats_end;
+	    cpu_stats_end = cpu_stats_start;
+	    cpu_stats_start = cpu_stats_swap;
+				
+			sys_ram_used_last_printed = ram_used;
+			sys_cpu_usage_last_printed = _sys_cpu_usage;
+			
+			// print report for the processes
+			for (unsigned i=0; i < mprocs_cnt; ++i) {
+				fprintf(output, "%s %7u %7u %+7d %6.2f%s",
+					c_begin(i),
+					mprocs[i].mem_clean,
+					mprocs[i].mem_dirty,
+					mprocs[i].mem_change,
+					cpu_usage(cpu_ticks_total-cpu_ticks_total_prev,
+							  (cpu_ticks_total-cpu_ticks_total_prev) -
+							   mprocs[i].cputicks_change),
+					c_end(i));
+			}
+			fprintf(output, "\n");
+			fflush(output);
+		}
+				
 		sleep(sleep_interval);
 		if (quit) break;
 		prev_ram_used = ram_used;
@@ -930,14 +1046,18 @@ int main(int argc, char** argv)
 			fprintf(stderr, "ERROR: unable to read /proc/meminfo\n");
 			return 1;
 		}
+		
 		cpu_ticks_total_prev = cpu_ticks_total;
 		cpu_ticks_idle_prev  = cpu_ticks_idle;
 		system_cpu_usage(&cpu_ticks_total, &cpu_ticks_idle);
 		update_processes(mprocs, mprocs_cnt);
-		if (is_atty && rows) {
-			if (++lines_printed >= rows-1) {
-				lines_printed = print_headers(mprocs,
-						mprocs_cnt, watermarks_avail);
+		
+		if (do_print_report) {
+			if (is_atty && rows) {
+				if (++lines_printed >= rows-1) {
+					lines_printed = print_headers(mprocs,
+							mprocs_cnt, watermarks_avail);
+				}
 			}
 		}
 	}
