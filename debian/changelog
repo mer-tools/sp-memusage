@@ -1,3 +1,10 @@
+sp-memusage (1.1.5) unstable; urgency=low
+
+  * Support swap in mem-smaps-private and mem-dirty-code-pages scripts.
+    Fixes: NB#144137
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue,  3 Nov 2009 13:36:40 +0200
+
 sp-memusage (1.1.4) unstable; urgency=low
 
   * mem-cpu-monitor:

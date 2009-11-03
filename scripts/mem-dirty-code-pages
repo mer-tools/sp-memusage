@@ -3,7 +3,7 @@
 # Script for checking running executables for dirty code pages.
 # This file is part of sp-memusage.
 #
-# Copyright (C) 2007,2008 by Nokia Corporation
+# Copyright (C) 2007-2009 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -39,6 +39,7 @@ if [ $# -lt 1 ]; then
 fi
 
 commands=""
+swap_total=0
 shared_total=0
 private_total=0
 echo "Detailed information:"
@@ -57,35 +58,39 @@ for pid in $*; do
 	# - address, not-executable
 	# - address, executable, heap/stack
 	# - address, executable, mapped to file ('/')
-	# - from above, dirty, non-zero
+	# - above matched, dirty or swap, non-zero
 	awk '
 	/^[-0-9a-f]+ ..-. /      { code=""; next }
 	/^[-0-9a-f]+ ..x. .* [[]/{ code=""; next }
 	/^[-0-9a-f]+ ..x. .* \// { code=$6; show=1; next }
-	code && /_Dirty:/ && ! / 0 / { if (show) { print code; show=0 } print }
+	code && (/_Dirty:/ || /Swap:/) && !/ 0 / { if (show) { print code; show=0 } print }
 	' /proc/$pid/smaps
 	# get summary
-	values=$(awk 'BEGIN { shared=0; private=0; }
+	values=$(awk 'BEGIN { shared=0; private=0; swap=0 }
 	/^[-0-9a-f]+ ..-. /      { code=0; next }
 	/^[-0-9a-f]+ ..x. .* [[]/{ code=0; next }
 	/^[-0-9a-f]+ ..x. .* \// { code=1; next }
 	code && /Private_Dirty:/ { private += $2; next }
 	code && /Shared_Dirty:/  { shared  += $2; next }
-	END { if (private || shared) print private, shared }
+	code && /Swap:/          { swap    += $2; next }
+	END { if (private || shared || swap) print private, shared, swap }
 	' /proc/$pid/smaps)
 	if [ \! -z "$values" ]; then
-		private=${values% *}
-		shared=${values#* }
+		private=$(echo $values|cut -d' ' -f1)
+		shared=$(echo $values|cut -d' ' -f2)
+		swap=$(echo $values|cut -d' ' -f3)
 		private_total=$(($private_total+$private))
 		shared_total=$(($shared_total+$shared))
-		commands="$commands $cmd[$pid]=${private}/${shared}KB"
+		swap_total=$(($swap_total+$swap))
+		commands="$commands $cmd[$pid]=${private}/${swap}/${shared}KB"
 	fi
 done
 
 echo "---------------------------------------------------------"
-echo "Applications with private/shared dirty code pages:"
+echo "Applications with private/swapped/shared dirty *code* pages:"
 for cmd in $commands; do
 	echo "- $cmd"
 done
 echo "Shared dirty code summed from all processes = $shared_total kB"
+echo "Swapped out dirty code pages total = $swap_total kB"
 echo "Private dirty code pages total = $private_total kB"

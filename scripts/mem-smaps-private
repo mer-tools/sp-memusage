@@ -3,7 +3,7 @@
 # Script for calculating private memory usage for given process PID.
 # This file is part of sp-memusage.
 #
-# Copyright (C) 2006,2007,2008 by Nokia Corporation
+# Copyright (C) 2006-2009 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -27,7 +27,9 @@ if [ $# -ne 1 ]; then
 	echo
 	echo "print the process private memory usage according to SMAPS"
 	echo
-	echo "example:"
+	echo "examples:"
+	echo "  ${0##*/} \$(pidof pulseaudio)"
+	echo "or:"
 	echo "  cd /proc"
 	echo "  for pid in [0-9]*; do ${0##*/} \$pid; done"
 	echo
@@ -48,11 +50,13 @@ fi
 bin=${cmd%% *}
 opt=${cmd#* }
 
-sdirty=$(awk '/^Shared_Dirty:/{mem+=$2}END{print mem}' $smaps)
+swap=$(awk '/^Swap:/{mem+=$2}END{print mem}' $smaps)
 pdirty=$(awk '/^Private_Dirty:/{mem+=$2}END{print mem}' $smaps)
+sdirty=$(awk '/^Shared_Dirty:/{mem+=$2}END{print mem}' $smaps)
 pclean=$(awk '/^Private_Clean:/{mem+=$2}END{print mem}' $smaps)
 
 echo "PID $pid: ${bin##*/} $opt"
-echo "- Dirty shared memory: $sdirty kB"
-echo "- Dirty private memory: $pdirty kB"
+echo "- Swapped dirty memory: $swap kB"
+echo "- Private dirty memory: $pdirty kB"
+echo "- Shared  dirty memory: $sdirty kB"
 echo "- Clean private memory: $pclean kB"

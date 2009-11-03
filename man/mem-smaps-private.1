@@ -6,10 +6,20 @@ mem-smaps-private \fIPID\fP
 .SH DESCRIPTION
 \fImem-smaps-private\fP outputs the given process private memory usage.
 This information is parsed from the /proc/PID/smaps file.
+.SH EXAMPLES
+Checking single process memory usage:
+.br
+	\fImem-smaps-private\fP $(pidof pulseaudio)
+.PP
+Checking all processes memory usage:
+.br
+	cd /proc
+.br
+	for pid in [0-9]*; do \fImem-smaps-private\fP $pid; done
 .SH SEE ALSO
 .IR mem-dirty-code-pages (1)
 .SH COPYRIGHT
-Copyright (C) 2007,2008 Nokia Corporation.
+Copyright (C) 2006-2009 Nokia Corporation.
 .PP
 This is free software.  You may redistribute copies of it under the
 terms of the GNU General Public License v2 included with the software.
