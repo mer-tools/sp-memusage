@@ -4,10 +4,13 @@ mem-cpu-monitor - output system and process memory and cpu usage at given interv
 .SH SYNOPSIS
 mem-cpu-monitor [\fIinterval\fP] [[\fIPID\fP] [\fIPID...\fP]]
 .SH DESCRIPTION
-\fImem-cpu-monitor\fP outputs (one-liner) system and process memory and CPU
-usage information, at intervals defined by \fIinterval\fP (default three
-seconds). The processes to be monitored are specified by their process ID
-numbers (PIDs). Any number of PIDs may be specified.
+\fImem-cpu-monitor\fP outputs (one-liner) system and process memory, CPU
+usage and frequency information at intervals defined by \fIinterval\fP (default three
+seconds).
+
+The processes to be monitored are specified by their process ID
+numbers (PIDs). Any number of PIDs may be specified. For processes
+their clean, dirty memory, dirty memory change and CPU usage is monitored.
 
 Monitoring is continued until explicitly interrupted, for example by issuing
 SIGTERM via Ctrl-C.
@@ -65,46 +68,46 @@ three seconds.
 .nf
 $ mem-cpu-monitor 1
 System total memory: 2074040 kB RAM, 2650684 kB swap
-           _______________  ______
-________  / system memory \\/system\\
-time:   \\/  used:  change:  CPU-%:
-11:35:42    473828       +0   0.00
-11:35:43    473868      +40   3.94
-11:35:44    473868       +0   4.74
-11:35:45    473876       +8   2.45
-11:35:46    473876       +0   3.38
+           _______________  ____________
+________  / system memory \\/ system CPU \\
+time:   \\/  used:  change:     %:   MHz:
+11:35:42    473828       +0   0.00   800
+11:35:43    473868      +40   3.94   800
+11:35:44    473868       +0   4.74  1600
+11:35:45    473876       +8   2.45  1400
+11:35:46    473876       +0   3.38   800
 .fi
 
 .nf
 $ mem-cpu-monitor -p $(pidof gvim)
 System total memory: 2074040 kB RAM, 2650684 kB swap
 PID  3086: gvim mem-cpu-monitor.1
-           _______________  ______  _____________________________
-________  / system memory \\/system\\/PID 3086  gvim mem-cpu-mon...\\
-time:   \\/  used:  change:  CPU-%:  clean:  dirty: change: CPU-%:
-12:04:43    474988       +0   0.00    1564    3292      +0   0.00
-12:04:46    475264     +276   3.72    1564    3292      +0   0.00
-12:04:49    475296      +32   3.06    1564    3292      +0   0.00
-12:04:52    475784     +488   3.88    1564    3292      +0   0.00
+           _______________  ____________  _____________________________
+________  / system memory \\/ system CPU \\/PID 3086  gvim mem-cpu-mon...\\
+time:   \\/  used:  change:      %:  MHz:  clean:  dirty: change: CPU-%:
+12:04:43    474988       +0   0.00  800    1564    3292      +0   0.00
+12:04:46    475264     +276   3.72  800    1564    3292      +0   0.00
+12:04:49    475296      +32   3.06  800    1564    3292      +0   0.00
+12:04:52    475784     +488   3.88  800    1564    3292      +0   0.00
 .fi
 
 .nf
 $ mem-cpu-monitor
 System total memory: 246744 kB RAM, 0 kB swap
-              _______________  ______
-_______  __  / system memory \\/system\\
-time:  \\/BL\\/  used:  change:  CPU-%:
-08:07:11 --   137264       +0   0.00
-08:07:14 --   137272       +8  15.13
-08:07:17 --   137264       -8   0.33
-08:07:20 B-   188452   +51188  21.19
-08:07:23 B-   188452       +0   1.67
-08:07:26 B-   195996    +7544  55.45
-08:07:30 BL   233568   +37572 100.00
-08:07:33 BL   226032    -7536  81.73
-08:07:36 BL   221484    -4548  83.77
-08:07:39 --   119880  -101604 100.00
-08:07:42 --   126560    +6680 100.00
+              _______________  ____________
+_______  __  / system memory \\/ system CPU \\
+time:  \\/BL\\/  used:  change:     %:   MHz:
+08:07:11 --   137264       +0   0.00   800
+08:07:14 --   137272       +8  15.13   800
+08:07:17 --   137264       -8   0.33   800
+08:07:20 B-   188452   +51188  21.19   800
+08:07:23 B-   188452       +0   1.67   800
+08:07:26 B-   195996    +7544  55.45   800
+08:07:30 BL   233568   +37572 100.00   800
+08:07:33 BL   226032    -7536  81.73   800
+08:07:36 BL   221484    -4548  83.77   800
+08:07:39 --   119880  -101604 100.00   800
+08:07:42 --   126560    +6680 100.00   800
 .fi
 
 .SH FILES

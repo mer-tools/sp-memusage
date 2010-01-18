@@ -1,3 +1,10 @@
+sp-memusage (1.1.6) unstable; urgency=low
+
+  * Do not shows private clean data changes in the "changes" column.
+    Fixes: NB#151783
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Mon, 18 Jan 2010 11:11:40 +0200
+
 sp-memusage (1.1.5) unstable; urgency=low
 
   * Support swap in mem-smaps-private and mem-dirty-code-pages scripts.

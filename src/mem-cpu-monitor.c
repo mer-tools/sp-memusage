@@ -142,7 +142,7 @@ static void quit_app(int sig) { (void)sig; if (quit++) _exit(1); }
  *   @mem_dirty        Amount of Private Dirty memory in kilobytes, calculated
  *                     by combining Private_Dirty and Swap from
  *                     /proc/<pid>/smaps.
- *   @mem_change       Per round change of clean + dirty, in kilobytes.
+ *   @mem_change       Per round change of dirty, in kilobytes.
  *
  *   @cputicks_total   Amount of CPU ticks this process has been scheduled in
  *                     kernel & user modes, as reported by /proc/<pid>/stat.
@@ -459,8 +459,8 @@ update_process_memstats(monitored_process_t* process)
 	}
 done:
 	process->mem_change =
-		(ssize_t)(mem_clean + mem_dirty) -
-		(ssize_t)(process->mem_clean + process->mem_dirty);
+		(ssize_t)(mem_dirty) -
+		(ssize_t)(process->mem_dirty);
 	process->mem_clean = mem_clean;
 	process->mem_dirty = mem_dirty;
 	if (fp) fclose(fp);
