@@ -32,6 +32,6 @@ Description: Debug symbols for memusage
 Package: sp-memusage-tests
 Priority: extra
 Architecture: any
-Depends: ci-testing sp-memusage (=${binary:Version})
+Depends: ci-testing, sp-memusage (=${binary:Version})
 Description: CI tests for sp-memusage
  CI tests for sp-memusage
