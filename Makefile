@@ -30,6 +30,9 @@ install:
 	cp -a scripts/* $(DESTDIR)/usr/bin
 	install -d      $(DESTDIR)/usr/share/man/man1
 	cp -a man/*.1   $(DESTDIR)/usr/share/man/man1
+	install -d      $(DESTDIR)/usr/share/sp-memusage-tests/
+	cp -a tests/*	$(DESTDIR)/usr/share/sp-memusage-tests/
+
 
 # other docs are installed by the Debian packaging
 

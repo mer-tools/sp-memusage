@@ -29,3 +29,9 @@ Description: Debug symbols for memusage
  Debug symbols for memusage tools and mallinfo library to use with
  tools such as GDB.
 
+Package: sp-memusage-tests
+Priority: extra
+Architecture: any
+Depends: ci-testing sp-memusage (=${binary:Version})
+Description: CI tests for sp-memusage
+ CI tests for sp-memusage
