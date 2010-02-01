@@ -756,7 +756,7 @@ parse_cmdline(int argc, char** argv,
 			break;
 		case 'h':
 			usage();
-			exit(1);
+			exit(0);
 		case 1001:
 			colors = false;
 			break;
