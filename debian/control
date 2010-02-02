@@ -33,5 +33,7 @@ Package: sp-memusage-tests
 Priority: extra
 Architecture: any
 Depends: ci-testing, sp-memusage (=${binary:Version})
+XB-Maemo-CI-Packages: sp-memusage
+XB-Maemo-CI-Stage: fast, staging, acceptance
 Description: CI tests for sp-memusage
  CI tests for sp-memusage
