@@ -2,11 +2,11 @@
 .SH NAME
 mem-cpu-monitor - output system and process memory and cpu usage at given intervals
 .SH SYNOPSIS
-mem-cpu-monitor [\fIinterval\fP] [[\fIPID\fP] [\fIPID...\fP]]
+mem-cpu-monitor [[\fIPID\fP] [\fIPID...\fP]]
 .SH DESCRIPTION
 \fImem-cpu-monitor\fP outputs (one-liner) system and process memory, CPU
-usage and frequency information at intervals defined by \fIinterval\fP (default three
-seconds).
+usage and frequency information at intervals defined by \fI-i\fP option 
+(three seconds by default).
 
 The processes to be monitored are specified by their process ID
 numbers (PIDs). Any number of PIDs may be specified. For processes
@@ -66,7 +66,7 @@ three seconds.
 
 .SH EXAMPLE OUTPUT
 .nf
-$ mem-cpu-monitor 1
+$ mem-cpu-monitor -i 1
 System total memory: 2074040 kB RAM, 2650684 kB swap
            _______________  ____________
 ________  / system memory \\/ system CPU \\
