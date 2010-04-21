@@ -16,7 +16,7 @@
  *
  * This file is part of sp-memusage.
  *
- * Copyright (C) 2005-2009 by Nokia Corporation
+ * Copyright (C) 2005-2010 by Nokia Corporation
  *
  * Authors: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
  *          Arun Srinivasan <arun.srinivasan@nokia.com>
@@ -324,12 +324,19 @@ write_sys_cpu_usage(char* buffer, int size, void* args)
 int
 write_sys_cpu_freq(char* buffer, int size, void* args)
 {
+	static int last_cpu_freq = 0;
 	app_data_t* data = (app_data_t*)args;
 	int value;
 	if (sp_measure_diff_sys_cpu_avg_freq(data->sys_data1, data->sys_data2, &value) == 0) {
+		if (value) {
+			last_cpu_freq = value;
+		}
+		else {
+			value = last_cpu_freq;
+		}
 		return snprintf(buffer, size + 1, "%4d", value / 1000);
 	}
-	return 0;
+	return last_cpu_freq;
 }
 
 /**
@@ -415,12 +422,18 @@ app_data_init_sys_snapshots(app_data_t* self)
 
 	/* check for maemo5 specific memory watermarks */
 	if (access("/sys/kernel/low_watermark", R_OK) != 0 || access("/sys/kernel/high_watermark", R_OK) != 0) {
+		fprintf(stderr, "Note: (Maemo) kernel memory limits not found.\n");
 		flags &= (~SNAPSHOT_WATERMARK);
 	}
 
-	if ( (rc = sp_measure_init_sys_data(&self->sys_data[0], flags, NULL)) != 0) return rc;
-	if ( (rc = sp_measure_init_sys_data(&self->sys_data[1], 0, &self->sys_data[0])) != 0) return rc;
-
+	if ( (rc = sp_measure_init_sys_data(&self->sys_data[0], flags, NULL)) != 0) {
+		fprintf(stderr, "Warning: system /proc/ data snapshot initialization failed (%d).\n", rc);
+		return rc;
+	}
+	if ( (rc = sp_measure_init_sys_data(&self->sys_data[1], 0, &self->sys_data[0])) != 0) {
+		fprintf(stderr, "Warning: system /proc/ data snapshot initialization failed (%d).\n", rc);
+		return rc;
+	}
 	self->sys_data1 = &self->sys_data[0];
 	self->sys_data2 = &self->sys_data[1];
 
@@ -663,8 +676,8 @@ app_data_set_sleep_interval(app_data_t* self, const char* interval)
 {
 	float value_float;
 	if (sscanf(interval, "%f", &value_float) != 1 ||
-		value_float == 0u) {
-		fprintf(stderr, "ERROR: invalid interval\n");
+		value_float < 0.01) {
+		fprintf(stderr, "ERROR: invalid interval %g!\n", value_float);
 		return -1;
 	}
 	self->sleep_interval = value_float * 1000000;
@@ -793,14 +806,14 @@ int main(int argc, char** argv)
 	sp_measure_sys_data_t* sys_data_swap;
 	proc_data_t* proc;
 
-	if ( (rc = app_data_init(&app_data)) != 0) {
-		fprintf(stderr, "Failed to initialize application data (%d)\n", rc);
+	if (app_data_init(&app_data) != 0) {
+		fprintf(stderr, "ERROR: program initialization failed.\n");
 		exit(-1);
 	}
 
 	parse_cmdline(argc, argv, &app_data);
 	if (nice(-19) == -1) {
-		fprintf(stderr, "Warning, failed to change process priority (%d)\n", errno);
+		perror("Warning: failed to change process priority.");
 	}
 
 	app_data_init_timestamps(&app_data);
@@ -821,7 +834,7 @@ int main(int argc, char** argv)
 
 	/* take inital system snapshot */
 	if ( (rc = sp_measure_get_sys_data(app_data.sys_data1, NULL)) != 0) {
-		fprintf(stderr, "Failed to retrieve system snapshot (%d).\n", rc);
+		fprintf(stderr, "ERROR: failed to retrieve system snapshot (%d).\n", rc);
 		exit(-1);
 	}
 
@@ -829,7 +842,7 @@ int main(int argc, char** argv)
 	proc = app_data.proc_list;
 	while (proc) {
 		if ( (rc = sp_measure_get_proc_data(proc->data1, NULL)) != 0) {
-			fprintf(stderr, "Warning, failed to retrieve process snapshot (%d) for process(name=%s, pid=%d).\n",
+			fprintf(stderr, "Warning: failed to retrieve process snapshot (%d) for process(name=%s, pid=%d).\n",
 								rc, proc->data2->common->name, proc->data2->common->pid);
 		}
 		proc = proc->next;
@@ -837,7 +850,7 @@ int main(int argc, char** argv)
 
 	/* print the initial report header */
 	if ( (rc = sp_report_print_header(output, &app_data.root_header)) != 0) {
-		fprintf(stderr, "Failed to print report header (%d).\n", rc);
+		fprintf(stderr, "ERROR: failed to print report header (%d).\n", rc);
 		exit(-1);
 	}
 
@@ -847,7 +860,7 @@ int main(int argc, char** argv)
 
 		/* take system snapshot */
 		if ( (rc = sp_measure_get_sys_data(app_data.sys_data2, NULL)) != 0) {
-			fprintf(stderr, "Failed to retrieve system snapshot (%d)\n", rc);
+			fprintf(stderr, "ERROR: failed to retrieve system snapshot (%d)\n", rc);
 			exit(-1);
 		}
 
@@ -855,12 +868,12 @@ int main(int argc, char** argv)
 		if (!do_print_report) {
 			int _sys_ram_change;
 			if ( (rc = sp_measure_diff_sys_mem_used(app_data.sys_data1, app_data.sys_data2, &_sys_ram_change)) != 0) {
-				fprintf(stderr, "Failed to compare used system memory between two snapshots (%d).\n", rc);
+				fprintf(stderr, "ERROR: failed to compare used system memory between two snapshots (%d).\n", rc);
 				exit(-1);
 			}
 			int value;
 			if ( (rc = sp_measure_diff_sys_cpu_usage(app_data.sys_data1, app_data.sys_data2, &value)) != 0) {
-				fprintf(stderr, "Failed to compare cpu usage between two snapshots (%d).\n", rc);
+				fprintf(stderr, "ERROR: failed to compare cpu usage between two snapshots (%d).\n", rc);
 				exit(-1);
 			}
 			float _sys_cpu_usage_change = (float)value / 100;
@@ -882,8 +895,8 @@ int main(int argc, char** argv)
 				if (!do_print_report) {
 					if (IS_OPTION_VALUE_FLAG_SET(app_data.option_flags, OF_PROC_MEM_CHANGES_ONLY)) {
 						if ( (rc = sp_measure_diff_proc_mem_private_dirty(proc->data1, proc->data2, &value)) != 0) {
-							fprintf(stderr, "Failed to compare process private dirty memory change between two snapshots"
-									"(%d) for process(name=%s, pid=%d).\n",
+							fprintf(stderr, "ERROR: failed to compare process private dirty memory change between\n"
+									"two snapshots (%d) for process(name=%s, pid=%d).\n",
 									rc, proc->data2->common->name, proc->data2->common->pid);
 							exit(-1);
 						}
@@ -893,8 +906,8 @@ int main(int argc, char** argv)
 					}
 					if (IS_OPTION_VALUE_FLAG_SET(app_data.option_flags, OF_PROC_CPU_CHANGES_ONLY)) {
 						if ( (rc = sp_measure_diff_proc_cpu_ticks(proc->data1, proc->data2, &value)) != 0) {
-							fprintf(stderr, "Failed to compare process cpu usage between two snapshots"
-									"(%d) for process(name=%s, pid=%d).\n",
+							fprintf(stderr, "ERROR: failed to compare process cpu usage between\n"
+									"two snapshots (%d) for process(name=%s, pid=%d).\n",
 									rc, proc->data2->common->name, proc->data2->common->pid);
 							exit(-1);
 						}
@@ -932,7 +945,7 @@ int main(int argc, char** argv)
 			if (is_atty && rows) {
 				if (++lines_printed >= rows-1) {
 					if ( (rc = sp_report_print_header(output, &app_data.root_header)) != 0) {
-						fprintf(stderr, "Failed to print report header (%d).\n", rc);
+						fprintf(stderr, "ERROR: failed to print report header (%d).\n", rc);
 						exit(-1);
 					}
 					lines_printed = 3;
