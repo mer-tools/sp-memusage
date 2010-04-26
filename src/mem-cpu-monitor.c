@@ -69,6 +69,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <math.h>
+#include <dirent.h>
+#include <sys/wait.h>
 
 #include <sp_measure.h>
 
@@ -111,7 +113,8 @@ static bool colors = true;
 #define COLORIZE(prefix, text, postfix) 	(colors ? prefix text postfix : text)
 
 #define DEFAULT_SLEEP_INTERVAL 3000000u
-#define UNKNOWN_PROCESS_NAME "<unknown>"
+
+#define PROCESS_NAME(proc) (proc->common->name ? proc->common->name : "<unknown>")
 
 #define HEADER_TITLE_TIMESTAMP   "time:"
 
@@ -122,6 +125,7 @@ static void quit_app(int sig) { (void)sig; if (quit++) _exit(1); }
 
 /* a mark to print for process data when process is not available */
 #define NO_PROCESS_DATA    "n/a"
+
 
 static void
 usage()
@@ -142,9 +146,11 @@ usage()
 		"     -i, --interval=INTERVAL         Data acquisition interval.\n"
 		"     -C, --system-cpu-change=THRESHOLD         Perform output only when the system cpu usage is greater then the specified threshold.\n"
 		"     -M, --system-mem-change=THRESHOLD          Perform output only when the system memory change is greater then the specified threshold.\n"
-		"     -c, --cpu-changes          Perform output only when there was any change in cpu usage for any process being monitored.\n"
-		"     -m, --mem-changes          Perform output only when there was any change in memory usage for any process being monitored.\n"
+		"     -c, --cpu-change          Perform output only when there was any change in cpu usage for any process being monitored.\n"
+		"     -m, --mem-change          Perform output only when there was any change in memory usage for any process being monitored.\n"
+		"     -n, --name=NAME       Monitor processes starting with NAME.\n"
 		"     -h, --help            Display this help.\n"
+		"     -x, --exec=CMD        Executes and starts monitoring the CMD command line.\n"
 		"\n"
 		"Examples:\n"
 		"\n"
@@ -167,13 +173,23 @@ static struct option long_opts[] = {
 	{"file", 1, 0, 'f'},
 	{"pid", 1, 0, 'p'},
 	{"self", 0, 0, 1002},
-	{"mem-changes", 0, 0, 'm'},
-	{"cpu-changes", 0, 0, 'c'},
+	{"mem-change", 0, 0, 'm'},
+	{"cpu-change", 0, 0, 'c'},
 	{"system-cpu-change", 1, 0, 'C'},
 	{"system-mem-change", 1, 0, 'M'},
 	{"interval", 1, 0, 'i'},
+	{"name", 1, 0, 'n'},
+	{"exec", 1, 0, 'x'},
 	{0,0,0,0}
 };
+
+/**
+ * Structure to store monitored process name.
+ */
+typedef struct proc_name_t {
+	char* name;
+	size_t size;
+} proc_name_t;
 
 
 /**
@@ -220,6 +236,10 @@ typedef struct app_data_t {
 	sp_report_header_t root_header;
 	sp_report_header_t* watermark_header;
 
+	/* process monitoring by name */
+	proc_name_t name_list[32];
+	int name_index;
+	
 	unsigned long sleep_interval;
 	bool timestamp_print_msecs;
 
@@ -228,7 +248,7 @@ typedef struct app_data_t {
 } app_data_t;
 
 /*
- * Writer functions used to ouput the system/process statistics.
+ * Writer functions used to output the system/process statistics.
  */
 
 /**
@@ -340,7 +360,7 @@ write_sys_cpu_freq(char* buffer, int size, void* args)
 }
 
 /**
- * Writes process sprivate clean memory size (Kb).
+ * Writes process private clean memory size (Kb).
  */
 int
 write_proc_mem_clean(char* buffer, int size, void* args)
@@ -405,7 +425,7 @@ write_proc_cpu_usage(char* buffer, int size, void* args)
 }
 
 /*
- * End of writer funtions.
+ * End of writer functions.
  */
 
 /**
@@ -528,9 +548,30 @@ app_data_release(app_data_t* self)
 
 	sp_report_header_free(self->root_header.child);
 	self->root_header.child = NULL;
+
+	/* free monitored process names */
+	int i;
+	for (i = 0; i < self->name_index; i++) {
+		free(self->name_list[i].name);
+	}
+
 	return 0;
 }
 
+/**
+ * Formats process header title.
+ *
+ * @param[in] proc     the process data structure.
+ * @param[out] buffer  the output buffer.
+ * @param[in] size     the output buffer size.
+ * @return             the number of characters written into output buffer
+ *                     not counting the trailing '\0' character.
+ */
+static int
+proc_data_format_title(const proc_data_t* proc, char* buffer, int size)
+{
+	return snprintf(buffer, size, "PID %d %s", FIELD_PROC_PID(proc->data1), PROCESS_NAME(proc->data1));
+}
 
 /**
  * Creates process data structure.
@@ -560,8 +601,10 @@ proc_data_create(proc_data_t** pproc, int pid, app_data_t* app_data)
 	proc->data1 = &proc->data[0];
 	proc->data2 = &proc->data[1];
 
+	sp_measure_get_proc_data(proc->data1, NULL);
+
 	/* create process header */
-	snprintf(buffer, sizeof(buffer), "PID %d %s", FIELD_PROC_PID(proc->data1), FIELD_PROC_NAME(proc->data1));
+	proc_data_format_title(proc, buffer, sizeof(buffer));
 	proc->header = sp_report_header_add_child(&app_data->root_header, buffer, 30, NULL, NULL);
 	if (proc->header == NULL) return -ENOMEM;
 	if (sp_report_header_add_child(proc->header, "clean:", 8, write_proc_mem_clean, (void*)proc) == NULL) return -ENOMEM;
@@ -569,7 +612,7 @@ proc_data_create(proc_data_t** pproc, int pid, app_data_t* app_data)
 	if (sp_report_header_add_child(proc->header, "change:", 8, write_proc_mem_change, (void*)proc) == NULL) return -ENOMEM;
 	if (sp_report_header_add_child(proc->header, "CPU-%:", 6, write_proc_cpu_usage, (void*)proc) == NULL) return -ENOMEM;
 
-	proc->has_data = false;
+	proc->has_data = true;
 
 	return 0;
 }
@@ -686,6 +729,176 @@ app_data_set_sleep_interval(app_data_t* self, const char* interval)
 }
 
 /**
+ * Queues process name for monitoring.
+ *
+ * @param[in] name   name of the process to monitor.
+ * @return           0 for success.
+ */
+static int
+app_data_monitor_process_name(app_data_t* self, const char* name)
+{
+	if (!name) return -1;
+	if (self->name_index == sizeof(self->name_list) / sizeof(self->name_list[0])) {
+		return -1;
+	}
+	proc_name_t* proc = &self->name_list[self->name_index++];
+	proc->name = strdup(name);
+	proc->size = strlen(name);
+	return proc->name != NULL ? 0 : -ENOMEM;
+}
+
+
+/**
+ * Checks if the process is being monitored.
+ *
+ * @param[in]   the process name.
+ * @return      true if the process is being monitored.
+ */
+static bool
+app_data_is_process_monitored(app_data_t* self, const char* name)
+{
+	proc_name_t* proc = self->name_list;
+	while (proc - self->name_list < self->name_index) {
+		if (!strncmp(name, proc->name, proc->size)) {
+			return true;
+		}
+		proc++;
+	}
+	return false;
+}
+
+
+/**
+ * Scans running processes and updates monitored process list
+ *
+ * @param[in] self    the application data.
+ * @return            -1 - failure, 0 - monitored process list was not changed,
+ *                    1 - a process was added or removed to the list.
+ */
+static int
+app_data_scan_processes(app_data_t* self)
+{
+	int rc = 0;
+	if (self->name_index) {
+		static time_t last_timestamp = 0;
+		time_t current_timestamp = time(NULL);
+		char buffer[512];
+
+		/* first check for a new processes */
+		DIR* procDir = opendir("/proc");
+		if (procDir) {
+			struct dirent* item;
+			while ( (item = readdir(procDir)) ) {
+				int pid = atoi(item->d_name);
+				if (pid != 0) {
+					struct stat fs;
+					sprintf(buffer, "/proc/%s", item->d_name);
+					if (stat(buffer, &fs) == 0) {
+						if (last_timestamp < fs.st_mtime) {
+							sp_measure_proc_data_t data;
+							if (sp_measure_init_proc_data(&data, pid, 0, NULL) == 0 && data.common->name &&
+									app_data_is_process_monitored(self, data.common->name)) {
+								app_data_add_proc(self, pid);
+								rc = 1;
+							}
+							sp_measure_free_proc_data(&data);
+						}
+					}
+				}
+			}
+			closedir(procDir);
+		}
+		last_timestamp = current_timestamp;
+
+		/* check for terminated processes */
+		proc_data_t* proc = self->proc_list;
+		while (proc) {
+			proc_data_t* proc_free = NULL;
+			int pid = proc->data[0].common->pid;
+			sprintf(buffer, "/proc/%d", pid);
+			if (access(buffer, F_OK) != 0) {
+				proc_free = proc;
+			}
+			proc = proc->next;
+			if (proc_free) {
+				app_data_remove_proc(self, pid);
+				rc = 1;
+			}
+		}
+	}
+	return rc;
+}
+
+
+/**
+ * Execute the specified application and start monitoring it.
+ */
+static int
+execute_application(app_data_t* self, const char* cmd)
+{
+	int pid = fork();
+	if (pid == 0) {
+		char* argv[100];
+		char buffer[512];
+		int argc = 0;
+		const char* in = cmd;
+		char* out = buffer;
+
+		/* parse the command line */
+		while (*in) {
+			switch (*in) {
+				case '"':
+				case '\'': {
+					char quote = *in++;
+					while (*in && *in != quote) *out++ = *in++;
+					break;
+				}
+				case ' ':
+				case '\0': {
+					if (out != buffer) {
+						*out = '\0';
+						argv[argc++] = strdup(buffer);
+						out = buffer;
+					}
+					break;
+				}
+				default: {
+					*out++ = *in;
+					break;
+				}
+			}
+			in++;
+		}
+		if (out != buffer) {
+			*out = '\0';
+			argv[argc++] = strdup(buffer);
+		}
+		argv[argc] = NULL;
+		/* execute application */
+		if (execvp(argv[0], argv) == -1) {
+			return -1;
+		}
+
+		while (argc--) {
+			free(argv[argc]);
+		}
+	}
+	if (pid == -1) {
+		return -1;
+	}
+	return app_data_add_proc(self, pid);
+}
+
+/**
+ * Cleanup terminated child processes.
+ */
+static void process_closed(int sig __attribute__((unused)))
+{
+	int status;
+	wait(&status);
+}
+
+/**
  * Parses application command line.
  */
 static void
@@ -693,7 +906,7 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 {
 	int opt, rc;
 	char* output_path = NULL;
-	while ((opt = getopt_long(argc, argv, "p:hf:mcM:C:i:", long_opts, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "p:hf:mcM:C:i:n:x:", long_opts, NULL)) != -1) {
 		switch (opt) {
 		case 'f':
 			output_path = strdup(optarg);
@@ -706,14 +919,14 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 			break;
 		case 1002:
 			if ( (rc = app_data_add_proc(self, getpid())) != 0) {
-				fprintf(stderr, "Error %d occured during process %d monitoring initialization\n",
+				fprintf(stderr, "Error %d occurred during process %d monitoring initialization\n",
 							rc, getpid());
 				exit(-1);
 			}
 			break;
 		case 'p':
 			if ( (rc = app_data_add_proc(self, atoi(optarg))) != 0) {
-				fprintf(stderr, "Error %d occured during process %d monitoring initialization\n",
+				fprintf(stderr, "Error %d occurred during process %d monitoring initialization\n",
 							rc, atoi(optarg));
 				exit(-1);
 			}
@@ -742,6 +955,18 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 				exit(1);
 			}
 			break;
+		case 'n':
+			if (app_data_monitor_process_name(self, optarg) != 0) {
+				fprintf(stderr, "ERROR: Failed to monitor process %s\n", optarg);
+				exit(1);
+			}
+			break;
+		case 'x':
+			if (execute_application(self, optarg) != 0) {
+				fprintf(stderr, "ERROR: Failed to execute command %s\n", optarg);
+				exit(1);
+			}
+			break;
 		default:
 			usage();
 			exit(1);
@@ -760,7 +985,7 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 	}
 	while (optind < argc) {
 		if ( (rc = app_data_add_proc(self, atoi(argv[optind]))) != 0) {
-			fprintf(stderr, "Error %d occured during process %d monitoring initialization\n",
+			fprintf(stderr, "Error %d occurred during process %d monitoring initialization\n",
 						rc, atoi(argv[optind]));
 			exit(-1);
 		}
@@ -805,11 +1030,15 @@ int main(int argc, char** argv)
 	sp_measure_proc_data_t* proc_data_swap;
 	sp_measure_sys_data_t* sys_data_swap;
 	proc_data_t* proc;
+	bool do_print_header = true;
+	bool do_print_report;
 
 	if (app_data_init(&app_data) != 0) {
 		fprintf(stderr, "ERROR: program initialization failed.\n");
 		exit(-1);
 	}
+
+	signal(SIGCHLD, process_closed);
 
 	parse_cmdline(argc, argv, &app_data);
 	if (nice(-19) == -1) {
@@ -830,9 +1059,7 @@ int main(int argc, char** argv)
 	// SIGINT to be ignored.
 	if (signal(SIGINT, quit_app) == SIG_IGN) signal(SIGINT, SIG_IGN);
 
-	bool do_print_report;
-
-	/* take inital system snapshot */
+	/* take initial system snapshot */
 	if ( (rc = sp_measure_get_sys_data(app_data.sys_data1, NULL)) != 0) {
 		fprintf(stderr, "ERROR: failed to retrieve system snapshot (%d).\n", rc);
 		exit(-1);
@@ -843,20 +1070,19 @@ int main(int argc, char** argv)
 	while (proc) {
 		if ( (rc = sp_measure_get_proc_data(proc->data1, NULL)) != 0) {
 			fprintf(stderr, "Warning: failed to retrieve process snapshot (%d) for process(name=%s, pid=%d).\n",
-								rc, proc->data2->common->name, proc->data2->common->pid);
+				rc, PROCESS_NAME(proc->data2), proc->data2->common->pid);
 		}
 		proc = proc->next;
-	}
-
-	/* print the initial report header */
-	if ( (rc = sp_report_print_header(output, &app_data.root_header)) != 0) {
-		fprintf(stderr, "ERROR: failed to print report header (%d).\n", rc);
-		exit(-1);
 	}
 
 	while (!quit) {
 
 		do_print_report = do_print_report_default;
+
+		/* scan for processes to monitor */
+		if (app_data_scan_processes(&app_data) == 1) {
+			do_print_header = true;
+		}
 
 		/* take system snapshot */
 		if ( (rc = sp_measure_get_sys_data(app_data.sys_data2, NULL)) != 0) {
@@ -888,16 +1114,30 @@ int main(int argc, char** argv)
 		/* take process snapshots */
 		proc = app_data.proc_list;
 		while (proc) {
-			/* take snapshot */
-			proc->has_data = sp_measure_get_proc_data(proc->data2, NULL) == 0;
-			if (proc->has_data) {
+			proc_data_t* proc_free = NULL;
+			/* Check if process name was retrieved, try to retrieve it if necessary.
+			 * This became necessary when --exec option was added. As the process data
+			 * is read directly after it is forked, the target process might not be
+			 * yet executed and the process name can't be retrieved.
+			 */
+			if (FIELD_PROC_NAME(proc->data1) == NULL) {
+				sp_measure_reinit_proc_data(proc->data1);
+				if (FIELD_PROC_NAME(proc->data1)) {
+					char buffer[256];
+					proc_data_format_title(proc, buffer, sizeof(buffer));
+					sp_report_header_set_title(proc->header, buffer, 30);
+					do_print_header = true;
+				}
+			}
+  			/* take snapshot */
+			if (sp_measure_get_proc_data(proc->data2, NULL) == 0) {
 				/* check if the report should be printed */
 				if (!do_print_report) {
 					if (IS_OPTION_VALUE_FLAG_SET(app_data.option_flags, OF_PROC_MEM_CHANGES_ONLY)) {
 						if ( (rc = sp_measure_diff_proc_mem_private_dirty(proc->data1, proc->data2, &value)) != 0) {
 							fprintf(stderr, "ERROR: failed to compare process private dirty memory change between\n"
 									"two snapshots (%d) for process(name=%s, pid=%d).\n",
-									rc, proc->data2->common->name, proc->data2->common->pid);
+									rc, PROCESS_NAME(proc->data2), proc->data2->common->pid);
 							exit(-1);
 						}
 						if (value != 0) {
@@ -908,7 +1148,7 @@ int main(int argc, char** argv)
 						if ( (rc = sp_measure_diff_proc_cpu_ticks(proc->data1, proc->data2, &value)) != 0) {
 							fprintf(stderr, "ERROR: failed to compare process cpu usage between\n"
 									"two snapshots (%d) for process(name=%s, pid=%d).\n",
-									rc, proc->data2->common->name, proc->data2->common->pid);
+									rc, PROCESS_NAME(proc->data2), proc->data2->common->pid);
 							exit(-1);
 						}
 						if (value != 0) {
@@ -917,8 +1157,26 @@ int main(int argc, char** argv)
 					}
 				}
 			}
+			else {
+				/* if snapshot retrieval failed, assume that the process has been terminated and stop monitoring it */
+				proc_free = proc;
+			}
 			proc = proc->next;
+			if (proc_free) {
+				app_data_remove_proc(&app_data, FIELD_PROC_PID(proc_free->data2));
+				do_print_header = true;
+			}
 		}
+
+		/* reprint header if its the first time or next screen or a process was added/removed */
+		if (do_print_header) {
+			if ( (rc = sp_report_print_header(output, &app_data.root_header)) != 0) {
+				fprintf(stderr, "ERROR: failed to print report header (%d).\n", rc);
+				exit(-1);
+			}
+			do_print_header = false;
+		}
+
 		/* print data */
 		if (do_print_report) {
 			sp_report_print_data(output, &app_data.root_header);
@@ -944,10 +1202,7 @@ int main(int argc, char** argv)
 		if (do_print_report) {
 			if (is_atty && rows) {
 				if (++lines_printed >= rows-1) {
-					if ( (rc = sp_report_print_header(output, &app_data.root_header)) != 0) {
-						fprintf(stderr, "ERROR: failed to print report header (%d).\n", rc);
-						exit(-1);
-					}
+					do_print_header = true;
 					lines_printed = 3;
 				}
 			}

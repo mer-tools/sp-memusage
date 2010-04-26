@@ -18,11 +18,23 @@ SIGTERM via Ctrl-C.
 .SH OPTIONS
 .TP 24
 -p, --pid=\fIPID\fP
-Monitor process specified by \fIPID\fP. The existence of the process is not
-checked, and the death of the process does \fBnot\fP interrupt
-\fImem-cpu-monitor\fP.
+Monitor process specified by \fIPID\fP. If there are no processes with the
+specified \fIPID\fP it is automatically removed from the monitored process
+list.
 .TP 24
--f, --file=FILE
+-n, --name=\fINAME\fP
+Monitor processes which name starts with \fINAME\fP.
+This option can significantly increase the mem-cpu-monitor overhead
+and therefore is not recommended for usage with small (sub second) update
+intervals. Note that the real new process detection resolution is one second
+anyway.
+.TP 24
+-x, --exec=\fICMD\fP
+Execute command line \fICMD\fP and start monitoring the created process.
+\fICMD\fP can contain the application name and command line parameters - in
+this case it should be enclosed with quotes. For example: --exec="ls /home"
+.TP 24
+-f, --file=\fIFILE\fP
 Redirect output to \fIFILE\fP.
 .TP 24
     --no-colors
@@ -30,6 +42,25 @@ Never use colors. See section \fBTERMINAL TWEAKS\fP for more details.
 .TP 24
     --self
 Adds this instance of \fImem-cpu-monitor\fP to the list of monitored processes.
+.TP 24
+-i, --interval=\fIINTERVAL\fP
+Data acquisition interval in seconds (decimal values are accepted).
+.TP 24
+-C, --system-cpu-change=\fITHRESHOLD\fP
+Perform output only when the system cpu usage is greater then the specified 
+\fITHRESHOLD\fP.
+.TP 24
+-M, --system-mem-change=\fITHRESHOLD\fP
+Perform output only when the system memory change is greater then the specified 
+\fITHRESHOLD\fP.
+.TP 24
+-c, --cpu-change=\fITHRESHOLD\fP
+Perform output only when the monitored process cpu usage is greater then the specified 
+\fITHRESHOLD\fP.
+.TP 24
+-m, --mem-change=\fITHRESHOLD\fP
+Perform output only when the monitored process memory change is greater then the specified 
+\fITHRESHOLD\fP.
 .TP 24
 -h, --help
 Display a brief help message.
