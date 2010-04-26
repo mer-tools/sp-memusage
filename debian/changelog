@@ -1,3 +1,18 @@
+sp-memusage (1.2) unstable; urgency=low
+
+  * mem-cpu-monitor argument parsing change:
+    - setting interval requires use of -i option
+    - align names of process option names with system options
+      (mem-changes -> mem-change, cpu-changes -> cpu-change)
+  * mem-cpu-monitor updates:
+    - support for sub-second intervals
+    - refactored to use/depend on the new libsp-measure library
+    - support for starting monitored process (-exec) and monitoring
+      processes starting after mem-cpu-monitor starts (-name).
+    Fixes: NB#161734, NB#159709
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Fri, 16 Apr 2010 16:11:40 +0200
+
 sp-memusage (1.1.7) unstable; urgency=low
 
   * CI tests added.
