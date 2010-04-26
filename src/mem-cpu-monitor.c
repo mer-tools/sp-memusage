@@ -907,6 +907,13 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 	int opt, rc;
 	char* output_path = NULL;
 	while ((opt = getopt_long(argc, argv, "p:hf:mcM:C:i:n:x:", long_opts, NULL)) != -1) {
+		/* getopt allows -<char><arg> which gives confusing results
+		 * when one writes --name foobar as -name.  Complain about it.
+		 */
+		if (optarg && argv[optind - 1] != optarg && *(argv[optind - 1] + 1) != '-') {
+			fprintf(stderr, "ERROR: failed to parse argument %s!\n", argv[optind - 1]);
+			exit(1);
+		}
 		switch (opt) {
 		case 'f':
 			output_path = strdup(optarg);
@@ -919,14 +926,14 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 			break;
 		case 1002:
 			if ( (rc = app_data_add_proc(self, getpid())) != 0) {
-				fprintf(stderr, "Error %d occurred during process %d monitoring initialization\n",
+				fprintf(stderr, "Error %d during process %d monitoring initialization!\n",
 							rc, getpid());
 				exit(-1);
 			}
 			break;
 		case 'p':
 			if ( (rc = app_data_add_proc(self, atoi(optarg))) != 0) {
-				fprintf(stderr, "Error %d occurred during process %d monitoring initialization\n",
+				fprintf(stderr, "Error %d during process %d monitoring initialization!\n",
 							rc, atoi(optarg));
 				exit(-1);
 			}
@@ -957,13 +964,13 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 			break;
 		case 'n':
 			if (app_data_monitor_process_name(self, optarg) != 0) {
-				fprintf(stderr, "ERROR: Failed to monitor process %s\n", optarg);
+				fprintf(stderr, "ERROR: failed to monitor process %s\n", optarg);
 				exit(1);
 			}
 			break;
 		case 'x':
 			if (execute_application(self, optarg) != 0) {
-				fprintf(stderr, "ERROR: Failed to execute command %s\n", optarg);
+				fprintf(stderr, "ERROR: failed to execute command %s\n", optarg);
 				exit(1);
 			}
 			break;
@@ -985,7 +992,7 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 	}
 	while (optind < argc) {
 		if ( (rc = app_data_add_proc(self, atoi(argv[optind]))) != 0) {
-			fprintf(stderr, "Error %d occurred during process %d monitoring initialization\n",
+			fprintf(stderr, "Error %d occurred during process %d monitoring initialization!\n",
 						rc, atoi(argv[optind]));
 			exit(-1);
 		}
