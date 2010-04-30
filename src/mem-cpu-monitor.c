@@ -124,7 +124,7 @@ static volatile sig_atomic_t quit = 0;
 static void quit_app(int sig) { (void)sig; if (quit++) _exit(1); }
 
 /* a mark to print for process data when process is not available */
-#define NO_PROCESS_DATA    "n/a"
+#define NO_DATA    "n/a"
 
 
 static void
@@ -208,6 +208,8 @@ typedef struct proc_data_t {
 
 	bool has_data;
 
+	int resource_flags;
+
 	sp_report_header_t* header;
 
 	struct app_data_t* app_data;
@@ -229,6 +231,8 @@ typedef struct app_data_t {
 	sp_measure_sys_data_t sys_data[2];
 	sp_measure_sys_data_t* sys_data1;
 	sp_measure_sys_data_t* sys_data2;
+
+	int resource_flags;
 
 	proc_data_t* proc_list;
 	int proc_count;
@@ -307,6 +311,10 @@ int
 write_sys_mem_used(char* buffer, int size, void* args)
 {
 	app_data_t* data = (app_data_t*)args;
+	if (FIELD_SYS_MEM_USED(data->sys_data2) == -1) {
+		strcpy(buffer, NO_DATA);
+		return sizeof(NO_DATA) - 1;
+	}
 	return snprintf(buffer, size + 1, "%8d", FIELD_SYS_MEM_USED(data->sys_data2));	return 0;
 }
 
@@ -321,7 +329,8 @@ write_sys_mem_change(char* buffer, int size, void* args)
 	if (sp_measure_diff_sys_mem_used(data->sys_data1, data->sys_data2, &value) == 0) {
 		return snprintf(buffer, size + 1, "%+6d", value);
 	}
-	return 0;
+	strcpy(buffer, NO_DATA);
+	return sizeof(NO_DATA) - 1;
 }
 
 /**
@@ -335,7 +344,8 @@ write_sys_cpu_usage(char* buffer, int size, void* args)
 	if (sp_measure_diff_sys_cpu_usage(data->sys_data1, data->sys_data2, &value) == 0) {
 		return snprintf(buffer, size + 1, "%5.1f%%", (float)value / 100);
 	}
-	return 0;
+	strcpy(buffer, NO_DATA);
+	return sizeof(NO_DATA) - 1;
 }
 
 /**
@@ -356,7 +366,8 @@ write_sys_cpu_freq(char* buffer, int size, void* args)
 		}
 		return snprintf(buffer, size + 1, "%4d", value / 1000);
 	}
-	return last_cpu_freq;
+	strcpy(buffer, NO_DATA);
+	return sizeof(NO_DATA) - 1;
 }
 
 /**
@@ -366,9 +377,9 @@ int
 write_proc_mem_clean(char* buffer, int size, void* args)
 {
 	proc_data_t* proc = (proc_data_t*)args;
-	if (!proc->has_data) {
-		strcpy(buffer, NO_PROCESS_DATA);
-		return sizeof(NO_PROCESS_DATA);
+	if (!proc->has_data || FIELD_PROC_MEM_PRIVATE_CLEAN(proc->data2) == -1) {
+		strcpy(buffer, NO_DATA);
+		return sizeof(NO_DATA) - 1;
 	}
 	return snprintf(buffer, size + 1, "%8d", FIELD_PROC_MEM_PRIVATE_CLEAN(proc->data2));
 }
@@ -380,9 +391,9 @@ int
 write_proc_mem_dirty(char* buffer, int size, void* args)
 {
 	proc_data_t* proc = (proc_data_t*)args;
-	if (!proc->has_data) {
-		strcpy(buffer, NO_PROCESS_DATA);
-		return sizeof(NO_PROCESS_DATA);
+	if (!proc->has_data || FIELD_PROC_MEM_SWAP(proc->data2) == -1 || FIELD_PROC_MEM_PRIVATE_DIRTY(proc->data2) == -1) {
+		strcpy(buffer, NO_DATA);
+		return sizeof(NO_DATA) - 1;
 	}
 	return snprintf(buffer, size + 1, "%8d", FIELD_PROC_MEM_PRIV_DIRTY_SUM(proc->data2));
 }
@@ -394,15 +405,12 @@ int
 write_proc_mem_change(char* buffer, int size, void* args)
 {
 	proc_data_t* proc = (proc_data_t*)args;
-	if (!proc->has_data) {
-		strcpy(buffer, NO_PROCESS_DATA);
-		return sizeof(NO_PROCESS_DATA);
-	}
 	int value;
-	if (sp_measure_diff_proc_mem_private_dirty(proc->data1, proc->data2, &value) == 0) {
-		return snprintf(buffer, size + 1, "%+7d", value);
+	if (!proc->has_data || sp_measure_diff_proc_mem_private_dirty(proc->data1, proc->data2, &value) != 0) {
+		strcpy(buffer, NO_DATA);
+		return sizeof(NO_DATA) - 1;
 	}
-	return 0;
+	return snprintf(buffer, size + 1, "%+7d", value);
 }
 
 /**
@@ -412,21 +420,33 @@ int
 write_proc_cpu_usage(char* buffer, int size, void* args)
 {
 	proc_data_t* proc = (proc_data_t*)args;
-	if (!proc->has_data) {
-		strcpy(buffer, NO_PROCESS_DATA);
-		return sizeof(NO_PROCESS_DATA);
-	}
 	int total_ticks, proc_ticks;
-	if (sp_measure_diff_sys_cpu_ticks(proc->app_data->sys_data1, proc->app_data->sys_data2, &total_ticks) == 0 &&
-			sp_measure_diff_proc_cpu_ticks(proc->data1, proc->data2, &proc_ticks) == 0) {
-		return snprintf(buffer, size + 1, "%5.1f%%", total_ticks ? (float)proc_ticks * 100 / total_ticks : 0);
+	if (!proc->has_data || sp_measure_diff_sys_cpu_ticks(proc->app_data->sys_data1, proc->app_data->sys_data2, &total_ticks) != 0 ||
+			                                              sp_measure_diff_proc_cpu_ticks(proc->data1, proc->data2, &proc_ticks) != 0) {
+		strcpy(buffer, NO_DATA);
+		return sizeof(NO_DATA) - 1;
 	}
-	return 0;
+	return snprintf(buffer, size + 1, "%5.1f%%", total_ticks ? (float)proc_ticks * 100 / total_ticks : 0);
 }
 
 /*
  * End of writer functions.
  */
+
+
+/*
+ * Executes expression and checks the return value for warnings/errors
+ */
+#define CHECK_SNAPSHOT_RC(expression, text, ...) { \
+	int __rc = expression; \
+	if (__rc < 0) { \
+		fprintf(stderr, "ERROR: " text " Aborting.\n", __VA_ARGS__);\
+		exit(-1);\
+	}\
+	if (__rc > 0) { \
+		fprintf(stderr, "Warning: " text " Some data might be absent.\n", __VA_ARGS__);\
+	}\
+}
 
 /**
  * Initializes system snapshots.
@@ -437,27 +457,29 @@ write_proc_cpu_usage(char* buffer, int size, void* args)
 static int
 app_data_init_sys_snapshots(app_data_t* self)
 {
-	int rc;
-	int flags = SNAPSHOT_ALL;
+	int rc = 0;
+	self->resource_flags = SNAPSHOT_SYS;
 
-	/* check for maemo5 specific memory watermarks */
-	if (access("/sys/kernel/low_watermark", R_OK) != 0 || access("/sys/kernel/high_watermark", R_OK) != 0) {
+	CHECK_SNAPSHOT_RC(sp_measure_init_sys_data(&self->sys_data[0], self->resource_flags, NULL),
+			"system /proc/ data snapshot initialization returned (%d).", rc |= __rc);
+
+	CHECK_SNAPSHOT_RC(sp_measure_init_sys_data(&self->sys_data[1], 0, &self->sys_data[0]),
+			"system /proc/ data snapshot initialization returned (%d).", rc |= __rc);
+
+	/* take initial system snapshot */
+	CHECK_SNAPSHOT_RC(sp_measure_get_sys_data(&self->sys_data[0], self->resource_flags, NULL),
+			"System resource usage initial snapshot returned (%d).", rc = __rc);
+
+	if (rc & SNAPSHOT_SYS_MEM_WATERMARK) {
 		fprintf(stderr, "Note: (Maemo) kernel memory limits not found.\n");
-		flags &= (~SNAPSHOT_WATERMARK);
 	}
 
-	if ( (rc = sp_measure_init_sys_data(&self->sys_data[0], flags, NULL)) != 0) {
-		fprintf(stderr, "Warning: system /proc/ data snapshot initialization failed (%d).\n", rc);
-		return rc;
-	}
-	if ( (rc = sp_measure_init_sys_data(&self->sys_data[1], 0, &self->sys_data[0])) != 0) {
-		fprintf(stderr, "Warning: system /proc/ data snapshot initialization failed (%d).\n", rc);
-		return rc;
-	}
+	self->resource_flags &= (~rc);
+
 	self->sys_data1 = &self->sys_data[0];
 	self->sys_data2 = &self->sys_data[1];
 
-	return 0;
+	return rc;
 }
 
 /**
@@ -471,25 +493,25 @@ app_data_create_header(app_data_t* self)
 {
 	memset(&self->root_header, 0, sizeof(sp_report_header_t));
 	/* timestamp header*/
-	if (sp_report_header_add_child(&self->root_header, HEADER_TITLE_TIMESTAMP, 12, write_sys_timestamp, (void*)self) == NULL) return -ENOMEM;
+	if (sp_report_header_add_child(&self->root_header, HEADER_TITLE_TIMESTAMP, 12, SP_REPORT_ALIGN_CENTER, write_sys_timestamp, (void*)self) == NULL) return -ENOMEM;
 
 	/* watermarks header if necessary */
-	if (self->sys_data1->common->groups & SNAPSHOT_WATERMARK) {
-		self->watermark_header = sp_report_header_add_child(&self->root_header, "BL", 0, write_sys_mem_watermark, (void*)self);
+	if (self->resource_flags & SNAPSHOT_SYS_MEM_WATERMARK) {
+		self->watermark_header = sp_report_header_add_child(&self->root_header, "BL", 2, SP_REPORT_ALIGN_CENTER, write_sys_mem_watermark, (void*)self);
 		if (self->watermark_header == NULL) return -ENOMEM;
 	}
 
 	/* memory header containing used system memory and it's change from the previous snapshot columns*/
-	sp_report_header_t* mem_header = sp_report_header_add_child(&self->root_header, "system memory", 0, NULL, NULL);
+	sp_report_header_t* mem_header = sp_report_header_add_child(&self->root_header, "system memory", 0, SP_REPORT_ALIGN_CENTER, NULL, NULL);
 	if (mem_header == NULL) return -ENOMEM;
-	if (sp_report_header_add_child(mem_header, "used:", 10, write_sys_mem_used, (void*)self) == NULL) return -ENOMEM;
-	if (sp_report_header_add_child(mem_header, "change:", 8, write_sys_mem_change, (void*)self) == NULL) return -ENOMEM;
+	if (sp_report_header_add_child(mem_header, "used:", 10, SP_REPORT_ALIGN_RIGHT, write_sys_mem_used, (void*)self) == NULL) return -ENOMEM;
+	if (sp_report_header_add_child(mem_header, "change:", 8, SP_REPORT_ALIGN_RIGHT, write_sys_mem_change, (void*)self) == NULL) return -ENOMEM;
 
 	/* cpu header containing cpu usage and average frequency columns */
-	sp_report_header_t* cpu_header = sp_report_header_add_child(&self->root_header, "system CPU", 0, NULL, NULL);
+	sp_report_header_t* cpu_header = sp_report_header_add_child(&self->root_header, "system CPU", 0, SP_REPORT_ALIGN_CENTER, NULL, NULL);
 	if (cpu_header == NULL) return -ENOMEM;
-	if (sp_report_header_add_child(cpu_header, "%:", 6, write_sys_cpu_usage, (void*)self) == NULL) return -ENOMEM;
-	if (sp_report_header_add_child(cpu_header, "MHz:", 4, write_sys_cpu_freq, (void*)self) == NULL) return -ENOMEM;
+	if (sp_report_header_add_child(cpu_header, "%:", 6, SP_REPORT_ALIGN_RIGHT, write_sys_cpu_usage, (void*)self) == NULL) return -ENOMEM;
+	if (sp_report_header_add_child(cpu_header, "MHz:", 5, SP_REPORT_ALIGN_RIGHT, write_sys_cpu_freq, (void*)self) == NULL) return -ENOMEM;
 
 	return 0;
 }
@@ -506,7 +528,7 @@ app_data_init(app_data_t* self)
 	int rc;
 	memset(self, 0, sizeof(app_data_t));
 
-	if ( (rc = app_data_init_sys_snapshots(self)) != 0) return rc;
+	if ( (rc = app_data_init_sys_snapshots(self)) < 0) return rc;
 	if ( (rc = app_data_create_header(self)) != 0) return rc;
 
 	self->sleep_interval = DEFAULT_SLEEP_INTERVAL;
@@ -529,7 +551,7 @@ app_data_init_timestamps(app_data_t* self)
 {
 	self->timestamp_print_msecs = self->sleep_interval % 1000000;
 	if (!self->timestamp_print_msecs) {
-		sp_report_header_set_title(self->root_header.child, HEADER_TITLE_TIMESTAMP, 8);
+		sp_report_header_set_title(self->root_header.child, HEADER_TITLE_TIMESTAMP, 8, SP_REPORT_ALIGN_RIGHT);
 	}
 	return 0;
 }
@@ -587,34 +609,42 @@ static int
 proc_data_create(proc_data_t** pproc, int pid, app_data_t* app_data)
 {
 	char buffer[256];
-	int rc;
+	int rc = 0;
 	*pproc = (proc_data_t*)malloc(sizeof(proc_data_t));
 	proc_data_t* proc = *pproc;
 	if (proc == NULL) return -ENOMEM;
 
 	proc->next = NULL;
 	proc->app_data = app_data;
+	proc->resource_flags = SNAPSHOT_PROC;
 
 	/* initialize process snapshots */
-	if ( (rc = sp_measure_init_proc_data(&proc->data[0], pid, SNAPSHOT_ALL, NULL)) != 0) return rc;
-	if ( (rc = sp_measure_init_proc_data(&proc->data[1], 0, 0, &proc->data[0])) != 0) return rc;
+
+	CHECK_SNAPSHOT_RC(sp_measure_init_proc_data(&proc->data[0], pid, SNAPSHOT_PROC, NULL),
+			"proc /proc/<pid>/ data snapshot initialization returned (%d).", rc |= __rc);
+
+	CHECK_SNAPSHOT_RC(sp_measure_init_proc_data(&proc->data[1], 0, 0, &proc->data[0]),
+			"proc /proc/<pid>/ data snapshot initialization returned (%d).", rc |= __rc);
+
 	proc->data1 = &proc->data[0];
 	proc->data2 = &proc->data[1];
 
-	sp_measure_get_proc_data(proc->data1, NULL);
+	CHECK_SNAPSHOT_RC(sp_measure_get_proc_data(proc->data1, proc->resource_flags, NULL),
+			"proc /proc/<pid>/ data snapshot returned (%d).", rc |= __rc);
+	proc->resource_flags &= (~rc);
 
 	/* create process header */
 	proc_data_format_title(proc, buffer, sizeof(buffer));
-	proc->header = sp_report_header_add_child(&app_data->root_header, buffer, 30, NULL, NULL);
+	proc->header = sp_report_header_add_child(&app_data->root_header, buffer, 30, SP_REPORT_ALIGN_LEFT, NULL, NULL);
 	if (proc->header == NULL) return -ENOMEM;
-	if (sp_report_header_add_child(proc->header, "clean:", 8, write_proc_mem_clean, (void*)proc) == NULL) return -ENOMEM;
-	if (sp_report_header_add_child(proc->header, "dirty:", 8, write_proc_mem_dirty, (void*)proc) == NULL) return -ENOMEM;
-	if (sp_report_header_add_child(proc->header, "change:", 8, write_proc_mem_change, (void*)proc) == NULL) return -ENOMEM;
-	if (sp_report_header_add_child(proc->header, "CPU-%:", 6, write_proc_cpu_usage, (void*)proc) == NULL) return -ENOMEM;
+	if (sp_report_header_add_child(proc->header, "clean:", 8, SP_REPORT_ALIGN_RIGHT, write_proc_mem_clean, (void*)proc) == NULL) return -ENOMEM;
+	if (sp_report_header_add_child(proc->header, "dirty:", 8, SP_REPORT_ALIGN_RIGHT, write_proc_mem_dirty, (void*)proc) == NULL) return -ENOMEM;
+	if (sp_report_header_add_child(proc->header, "change:", 8, SP_REPORT_ALIGN_RIGHT, write_proc_mem_change, (void*)proc) == NULL) return -ENOMEM;
+	if (sp_report_header_add_child(proc->header, "CPU-%:", 7, SP_REPORT_ALIGN_RIGHT, write_proc_cpu_usage, (void*)proc) == NULL) return -ENOMEM;
 
 	proc->has_data = true;
 
-	return 0;
+	return rc;
 }
 
 /**
@@ -1024,7 +1054,6 @@ error:
 	return 0;
 }
 
-
 /**
  * Main function
  */
@@ -1033,14 +1062,14 @@ int main(int argc, char** argv)
 	bool is_atty = false;
 	int rows=0, lines_printed=0;
 	app_data_t app_data;
-	int rc, value;
+	int rc = 0, value;
 	sp_measure_proc_data_t* proc_data_swap;
 	sp_measure_sys_data_t* sys_data_swap;
 	proc_data_t* proc;
 	bool do_print_header = true;
 	bool do_print_report;
 
-	if (app_data_init(&app_data) != 0) {
+	if (app_data_init(&app_data) < 0) {
 		fprintf(stderr, "ERROR: program initialization failed.\n");
 		exit(-1);
 	}
@@ -1066,19 +1095,13 @@ int main(int argc, char** argv)
 	// SIGINT to be ignored.
 	if (signal(SIGINT, quit_app) == SIG_IGN) signal(SIGINT, SIG_IGN);
 
-	/* take initial system snapshot */
-	if ( (rc = sp_measure_get_sys_data(app_data.sys_data1, NULL)) != 0) {
-		fprintf(stderr, "ERROR: failed to retrieve system snapshot (%d).\n", rc);
-		exit(-1);
-	}
-
 	/* take initial process snapshots */
 	proc = app_data.proc_list;
 	while (proc) {
-		if ( (rc = sp_measure_get_proc_data(proc->data1, NULL)) != 0) {
-			fprintf(stderr, "Warning: failed to retrieve process snapshot (%d) for process(name=%s, pid=%d).\n",
-				rc, PROCESS_NAME(proc->data2), proc->data2->common->pid);
-		}
+		CHECK_SNAPSHOT_RC(sp_measure_get_proc_data(proc->data1, proc->resource_flags, NULL),
+				"Process (name=%s, pid=%d) resource usage snapshot returned (%d).",
+				PROCESS_NAME(proc->data2), proc->data2->common->pid, rc = __rc);
+		proc->resource_flags &= (~rc);
 		proc = proc->next;
 	}
 
@@ -1092,29 +1115,31 @@ int main(int argc, char** argv)
 		}
 
 		/* take system snapshot */
-		if ( (rc = sp_measure_get_sys_data(app_data.sys_data2, NULL)) != 0) {
-			fprintf(stderr, "ERROR: failed to retrieve system snapshot (%d)\n", rc);
-			exit(-1);
-		}
+		CHECK_SNAPSHOT_RC(sp_measure_get_sys_data(app_data.sys_data2, app_data.resource_flags, NULL),
+				"System resource usage snapshot returned (%d).", rc = __rc);
+		app_data.resource_flags &= (~rc);
 
 		/* check if report should be printed */
 		if (!do_print_report) {
 			int _sys_ram_change;
+			bool is_data_retrieved = true;
 			if ( (rc = sp_measure_diff_sys_mem_used(app_data.sys_data1, app_data.sys_data2, &_sys_ram_change)) != 0) {
-				fprintf(stderr, "ERROR: failed to compare used system memory between two snapshots (%d).\n", rc);
-				exit(-1);
+				fprintf(stderr, "Warning: failed to compare used system memory between two snapshots (%d).\n", rc);
+				is_data_retrieved = false;
 			}
 			int value;
 			if ( (rc = sp_measure_diff_sys_cpu_usage(app_data.sys_data1, app_data.sys_data2, &value)) != 0) {
-				fprintf(stderr, "ERROR: failed to compare cpu usage between two snapshots (%d).\n", rc);
-				exit(-1);
+				fprintf(stderr, "Warning: failed to compare cpu usage between two snapshots (%d).\n", rc);
+				is_data_retrieved = false;
 			}
-			float _sys_cpu_usage_change = (float)value / 100;
+			if (is_data_retrieved) {
+				float _sys_cpu_usage_change = (float)value / 100;
 
-			if ( (IS_OPTION_VALUE_FLAG_SET(app_data.option_flags, OF_SYS_MEM_CHANGES_ONLY) && abs(_sys_ram_change) >= sys_mem_change_threshold) ||
-				(IS_OPTION_VALUE_FLAG_SET(app_data.option_flags, OF_SYS_CPU_CHANGES_ONLY) && fabs(_sys_cpu_usage_change) >= sys_cpu_change_threshold) ) {
+				if ( (IS_OPTION_VALUE_FLAG_SET(app_data.option_flags, OF_SYS_MEM_CHANGES_ONLY) && abs(_sys_ram_change) >= sys_mem_change_threshold) ||
+					(IS_OPTION_VALUE_FLAG_SET(app_data.option_flags, OF_SYS_CPU_CHANGES_ONLY) && fabs(_sys_cpu_usage_change) >= sys_cpu_change_threshold) ) {
 
-				do_print_report = true;
+					do_print_report = true;
+				}
 			}
 		}
 
@@ -1132,12 +1157,12 @@ int main(int argc, char** argv)
 				if (FIELD_PROC_NAME(proc->data1)) {
 					char buffer[256];
 					proc_data_format_title(proc, buffer, sizeof(buffer));
-					sp_report_header_set_title(proc->header, buffer, 30);
+					sp_report_header_set_title(proc->header, buffer, 30, SP_REPORT_ALIGN_LEFT);
 					do_print_header = true;
 				}
 			}
   			/* take snapshot */
-			if (sp_measure_get_proc_data(proc->data2, NULL) == 0) {
+			if ( (rc = sp_measure_get_proc_data(proc->data2, proc->resource_flags, NULL)) >= 0) {
 				/* check if the report should be printed */
 				if (!do_print_report) {
 					if (IS_OPTION_VALUE_FLAG_SET(app_data.option_flags, OF_PROC_MEM_CHANGES_ONLY)) {
@@ -1162,6 +1187,10 @@ int main(int argc, char** argv)
 							do_print_report = true;
 						}
 					}
+				}
+				if (rc > 0) {
+					proc->resource_flags &= (~rc);
+					fprintf(stderr, "Warning: Process resource usage snapshot returned (%d). Some data might be absent.\n", rc);
 				}
 			}
 			else {

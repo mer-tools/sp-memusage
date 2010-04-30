@@ -9,7 +9,10 @@ sp-memusage (1.2) unstable; urgency=low
     - refactored to use/depend on the new libsp-measure library
     - support for starting monitored process (-exec) and monitoring
       processes starting after mem-cpu-monitor starts (-name).
-    Fixes: NB#161734, NB#159709
+    - if some resource subset is unavailable, warn about it & exclude
+      the resource from further processing, but let program continue
+      (e.g. if kernel is lacking CPU frequency scaling)
+    Fixes: NB#161734, NB#159709, NB#165657
 
  -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Fri, 16 Apr 2010 16:11:40 +0200
 

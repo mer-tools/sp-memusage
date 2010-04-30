@@ -131,6 +131,7 @@ static int header_create_item(
 		sp_report_header_t* parent,
 		const char* title,
 		int size,
+		int alignment,
 		sp_report_cell_write_fn print,
 		void* data
 		)
@@ -161,6 +162,7 @@ static int header_create_item(
 	item->size_print = 0;
 	item->color_prefix = 0;
 	item->color_postfix = 0;
+	item->alignment = alignment;
 	return 0;
 }
 
@@ -271,6 +273,40 @@ static void header_print_top(
 }
 
 /**
+ * Writes aligned text into the buffer.
+ * @param[out] buffer    the output buffer.
+ * @param[in] text       the text to write.
+ * @param[in] size       the output field size.
+ * @param[in] alignment  the text alignment (see sp_report_alignment_t enum).
+ * @return
+ */
+static void write_aligned_text(
+		char* buffer,
+		const char* text,
+		int size,
+		int alignment
+		)
+{
+	int pos = 0;
+	int len = strlen(text);
+	memset(buffer, ' ', size);
+	buffer[size] = '\0';
+	if (len <= size) {
+		if (alignment == SP_REPORT_ALIGN_RIGHT) {
+			pos = size - len;
+		}
+		else if (alignment == SP_REPORT_ALIGN_CENTER) {
+			pos = (size - len) / 2;
+		}
+	}
+	else {
+		buffer[--size] = '>';
+		len = size;
+	}
+	memcpy(buffer + pos, text, len);
+}
+
+/**
  * Prints the header itself.
  *
  * @param[in] fp              the output file.
@@ -287,22 +323,14 @@ static void header_print_item(
 		)
 {
 	char buffer[MAX_COLUMN_SIZE];
-	memset(buffer, ' ', header->size_print);
-	buffer[header->size_print] = '\0';
 
 	/* only print header if it's located at the target depth.
 	 * Otherwise print just empty field of the header's size */
 	if (relative_depth == 0 && header->title) {
-		int pos = 0;
-		int size = strlen(header->title);
-		if (size < header->size_print) {
-			pos = (header->size_print - size) / 2;
-		}
-		memcpy(buffer + pos, header->title, size);
-		if (size > header->size_print) {
-			buffer[header->size_print - 1] = '>';
-			buffer[header->size_print] = '\0';
-		}
+		write_aligned_text(buffer, header->title, header->size_print, header->alignment);
+	}
+	else {
+		write_aligned_text(buffer, "", header->size_print, 0);
 	}
 	fputs(buffer, fp);
 }
@@ -325,19 +353,13 @@ static void header_print_data(
 		)
 {
 	if (header->print) {
+		char data[MAX_COLUMN_SIZE];
 		char buffer[MAX_COLUMN_SIZE];
-		int size = header->print(buffer, header->size, header->data);
-		int i;
+		int size = header->print(data, header->size, header->data);
+		data[size] = '\0';
 
-		if (size > header->size_print) {
-			/* if the returned data does fit into the column, cut it and
-			 * append '>' as a sign that the column data has been truncated */
-			buffer[header->size_print - 1] = '>';
-		}
+		write_aligned_text(buffer, data, header->size_print, header->alignment);
 		fputs(buffer, fp);
-		for (i = 0; i < header->size_print - size; i++) {
-			fputc(' ', fp);
-		}
 	}
 	else {
 		header_print_item(fp, header, 1);
@@ -367,6 +389,7 @@ sp_report_header_t* sp_report_header_add_child(
 		sp_report_header_t* header,
 		const char* title,
 		int size,
+		int alignment,
 		sp_report_cell_write_fn print,
 		void* data
 		)
@@ -374,7 +397,7 @@ sp_report_header_t* sp_report_header_add_child(
 	sp_report_header_t* child;
 	int rc;
 
-	if ( (rc = header_create_item(&child, header, title, size, print, data)) != 0) {
+	if ( (rc = header_create_item(&child, header, title, size, alignment, print, data)) != 0) {
 		header_free_item(child);
 		return NULL;
 	}
@@ -387,6 +410,7 @@ sp_report_header_t* sp_report_header_add_sibling(
 		sp_report_header_t* header,
 		const char* title,
 		int size,
+		int alignment,
 		sp_report_cell_write_fn print,
 		void* data
 		)
@@ -394,7 +418,7 @@ sp_report_header_t* sp_report_header_add_sibling(
 	sp_report_header_t* sibling;
 	int rc;
 
-	if ( (rc = header_create_item(&sibling, header->parent, title, size, print, data)) != 0) {
+	if ( (rc = header_create_item(&sibling, header->parent, title, size, alignment, print, data)) != 0) {
 		header_free_item(sibling);
 		return NULL;
 	}
@@ -504,7 +528,8 @@ int sp_report_header_set_color(
 int sp_report_header_set_title(
 		sp_report_header_t* header,
 		const char* title,
-		int size
+		int size,
+		int alignment
 		)
 {
 	if (header->title) free(header->title);
@@ -513,6 +538,7 @@ int sp_report_header_set_title(
 		return -ENOMEM;
 	}
 	header->size = size ? size : (int)strlen(title) + 1;
+	header->alignment = alignment;
 
 	return 0;
 }

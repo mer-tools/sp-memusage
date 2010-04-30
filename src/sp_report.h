@@ -44,6 +44,12 @@
 
 #include <stdio.h>
 
+enum {
+	SP_REPORT_ALIGN_LEFT = 0,
+	SP_REPORT_ALIGN_RIGHT = 1,
+	SP_REPORT_ALIGN_CENTER = 2
+} sp_report_alignment_t;
+
 /* the data printing template function */
 typedef int (*sp_report_cell_write_fn)(char* buffer, int size, void* arg);
 
@@ -68,6 +74,9 @@ typedef struct sp_report_header_t {
 	/* data to print */
 	void* data;
 
+	/* text alignment */
+	int alignment;
+
 	/* column color ANSI escape sequences */
 	char* color_prefix;
 	char* color_postfix;
@@ -91,6 +100,7 @@ typedef struct sp_report_header_t {
  * @param[in] title     the new header title.
  * @param[in] size      the new header size. Length of the title (increased by 1) is
  *                      be used if size is 0.
+ * @param[in] alignment the column alignment (see sp_report_alignment_t enum).
  * @param[in] print     the data output function.
  * @param[in] data      the data to print.
  * @return              the created header or NULL in the case of failure.
@@ -99,6 +109,7 @@ sp_report_header_t* sp_report_header_add_child(
 		sp_report_header_t* header,
 		const char* title,
 		int size,
+		int alignment,
 		sp_report_cell_write_fn print,
 		void* data
 		);
@@ -111,6 +122,7 @@ sp_report_header_t* sp_report_header_add_child(
  * @param[in] title     the new header title.
  * @param[in] size      the new header size. Length of the title (increased by 1) is
  *                      be used if size is 0.
+ * @param[in] alignment the column alignment (see sp_report_alignment_t enum).
  * @param[in] print     the data output function.
  * @param[in] data      the data to print.
  * @return              the created header or NULL in the case of failure.
@@ -119,6 +131,7 @@ sp_report_header_t* sp_report_header_add_sibling(
 		sp_report_header_t* header,
 		const char* title,
 		int size,
+		int alignment,
 		sp_report_cell_write_fn print,
 		void* data
 		);
@@ -146,12 +159,14 @@ int sp_report_header_set_color(
  * @param[in] header   the header.
  * @param[in] title    the header title.
  * @param[in] size     the header size. The length of title will be used if zero.
+ * @param[in] alignment the column alignment (see sp_report_alignment_t enum).
  * @return
  */
 int sp_report_header_set_title(
 		sp_report_header_t* header,
 		const char* title,
-		int size
+		int size,
+		int alignment
 		);
 
 /**
