@@ -747,13 +747,27 @@ app_data_remove_proc(app_data_t* self, int pid)
 static int
 app_data_set_sleep_interval(app_data_t* self, const char* interval)
 {
-	float value_float;
-	if (sscanf(interval, "%f", &value_float) != 1 ||
-		value_float < 0.01) {
-		fprintf(stderr, "ERROR: invalid interval %g!\n", value_float);
+	char buffer[256] = {0};
+	int secs = 0, msecs = 0;
+	int rc;
+	/* scanf "%f" & float secs->msecs conversion has rounding issues,
+	 * whereas handling the digits directly gives exact results.
+	 */
+	if ( (rc = sscanf(interval, "%d.%s", &secs, buffer)) < 1) {
+		fprintf(stderr, "ERROR: invalid interval value: %s\n", interval);
 		return -1;
 	}
-	self->sleep_interval = value_float * 1000000;
+	if (rc > 1) {
+		int power10[] = {0, 100, 10, 1};
+		buffer[3] = '\0';
+		int len = strlen(buffer);
+		msecs = atoi(buffer) * power10[len];
+		if (!secs && msecs < 10) {
+			fprintf(stderr, "ERROR: Interval value 0.%03d is too small\n", msecs);
+			return -1;
+		}
+	}
+	self->sleep_interval = secs * 1000000 + msecs * 1000;
 	ADD_OPTION_VALUE_FLAG(self->option_flags, OF_INTERVAL_OPTION_SET);
 	return 0;
 }
@@ -1068,6 +1082,7 @@ int main(int argc, char** argv)
 	proc_data_t* proc;
 	bool do_print_header = true;
 	bool do_print_report;
+	struct timeval timestamp = {0, 0};
 
 	if (app_data_init(&app_data) < 0) {
 		fprintf(stderr, "ERROR: program initialization failed.\n");
@@ -1104,6 +1119,8 @@ int main(int argc, char** argv)
 		proc->resource_flags &= (~rc);
 		proc = proc->next;
 	}
+
+	gettimeofday(&timestamp, NULL);
 
 	while (!quit) {
 
@@ -1231,8 +1248,23 @@ int main(int argc, char** argv)
 			}
 		}
 
-		usleep(app_data.sleep_interval);
 		if (quit) break;
+
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		int interval  = (tv.tv_sec - timestamp.tv_sec) * 1000000 + tv.tv_usec - timestamp.tv_usec;
+		/* the sleep could be interrupted, force interval to 0 in that case */
+		if (interval < 0) interval = 0;
+		if (interval > (int)app_data.sleep_interval) {
+			fprintf(stderr, "Warning, the specified update interval is too small, please increase it.\n");
+			gettimeofday(&timestamp, NULL);
+		}
+		else {
+			usleep(app_data.sleep_interval - interval);
+			timestamp.tv_usec += app_data.sleep_interval;
+			timestamp.tv_sec += timestamp.tv_usec / 1000000;
+			timestamp.tv_usec %= 1000000;
+		}
 
 		/* reprint report header if necessary */
 		if (do_print_report) {
