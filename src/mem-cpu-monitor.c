@@ -1089,7 +1089,12 @@ int main(int argc, char** argv)
 		exit(-1);
 	}
 
-	signal(SIGCHLD, process_closed);
+	struct sigaction sa = {.sa_flags = 0, .sa_handler = process_closed};
+	sigemptyset(&sa.sa_mask);
+	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+		fprintf(stderr, "ERROR: Failed to install SIGCHILD handler\n");
+		exit(-1);
+	}
 
 	parse_cmdline(argc, argv, &app_data);
 	if (nice(-19) == -1) {
@@ -1108,7 +1113,10 @@ int main(int argc, char** argv)
 	if (is_atty) { rows = win_rows(); if (rows < 10 + app_data.proc_count) rows = 0; }
 	// Install our signal handler, unless someone specifically wanted
 	// SIGINT to be ignored.
-	if (signal(SIGINT, quit_app) == SIG_IGN) signal(SIGINT, SIG_IGN);
+	if (sigaction(SIGINT, NULL, &sa) == 0 && sa.sa_handler != SIG_IGN) {
+		sa.sa_handler = quit_app;
+		sigaction(SIGINT, &sa, NULL);
+	}
 
 	/* take initial process snapshots */
 	proc = app_data.proc_list;
