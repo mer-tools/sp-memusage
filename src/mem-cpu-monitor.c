@@ -311,7 +311,7 @@ int
 write_sys_mem_used(char* buffer, int size, void* args)
 {
 	app_data_t* data = (app_data_t*)args;
-	if (FIELD_SYS_MEM_USED(data->sys_data2) == -1) {
+	if (FIELD_SYS_MEM_USED(data->sys_data2) == ESPMEASURE_UNDEFINED) {
 		strcpy(buffer, NO_DATA);
 		return sizeof(NO_DATA) - 1;
 	}
