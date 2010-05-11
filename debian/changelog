@@ -1,3 +1,9 @@
+sp-memusage (1.2.1) unstable; urgency=low
+
+  * use LGPL as license.  Fixes: NB#168424
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Tue, 11 May 2010 17:11:40 +0200
+
 sp-memusage (1.2) unstable; urgency=low
 
   * mem-cpu-monitor argument parsing change:
