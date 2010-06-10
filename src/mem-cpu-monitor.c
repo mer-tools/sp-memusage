@@ -202,6 +202,9 @@ typedef struct proc_name_t {
  * functions.
  */
 typedef struct proc_data_t {
+	/* process command line */
+	char cmdline[256];
+	/* process snapshot data */
 	sp_measure_proc_data_t data[2];
 	sp_measure_proc_data_t* data1;
 	sp_measure_proc_data_t* data2;
@@ -617,6 +620,7 @@ proc_data_create(proc_data_t** pproc, int pid, app_data_t* app_data)
 	proc->next = NULL;
 	proc->app_data = app_data;
 	proc->resource_flags = SNAPSHOT_PROC;
+	*proc->cmdline = '\0';
 
 	/* initialize process snapshots */
 
@@ -669,6 +673,33 @@ proc_data_free(proc_data_t* proc)
 		free(proc);
 	}
 	return 0;
+}
+
+
+/**
+ * Checks if the process command line has been changed.
+ *
+ * This function is used to determine if the process data should
+ * be reinitialized.
+ * @param[in] proc  the process data.
+ * @return          0 if the process data should not be reinitialized.
+ */
+static int
+proc_data_check_cmdline(proc_data_t* proc) {
+	char buffer[256];
+	snprintf(buffer, sizeof(buffer), "/proc/%d/cmdline", proc->data1->common->pid);
+	int len = 0;
+	int fd = open(buffer, O_RDONLY);
+	if (fd != -1) {
+		len = read(fd, buffer, sizeof(buffer) - 1);
+		close(fd);
+	}
+	buffer[len] = '\0';
+	int rc = strcmp(proc->cmdline, buffer);
+	if (rc) {
+		strcpy(proc->cmdline, buffer);
+	}
+	return rc;
 }
 
 /**
@@ -1177,7 +1208,7 @@ int main(int argc, char** argv)
 			 * is read directly after it is forked, the target process might not be
 			 * yet executed and the process name can't be retrieved.
 			 */
-			if (FIELD_PROC_NAME(proc->data1) == NULL) {
+			if (proc_data_check_cmdline(proc) != 0) {
 				sp_measure_reinit_proc_data(proc->data1);
 				if (FIELD_PROC_NAME(proc->data1)) {
 					char buffer[256];

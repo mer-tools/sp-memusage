@@ -1,3 +1,10 @@
+sp-memusage (1.2.1) unstable; urgency=low
+
+  * Show correct process name when using the --exec option or when
+    the process name is otherwise changes.  Fixes: NB#159709
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Thu, 10 Jun 2010 14:11:40 +0200
+
 sp-memusage (1.2) unstable; urgency=low
 
   * mem-cpu-monitor argument parsing change:
