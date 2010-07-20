@@ -1,9 +1,9 @@
 #!/bin/sh
 #
-# Script for calculating private memory usage for given process PID.
+# Script for calculating private memory usage for given process PIDs.
 # This file is part of sp-memusage.
 #
-# Copyright (C) 2006-2009 by Nokia Corporation
+# Copyright (C) 2006-2010 by Nokia Corporation
 #
 # Contact: Eero Tamminen <eero.tamminen@nokia.com>
 #
@@ -21,42 +21,55 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA
 
-if [ $# -ne 1 ]; then
+if [ $# -lt 1 ]; then
 	echo
-	echo "usage: ${0##*/} <process PID>"
+	echo "usage: ${0##*/} <process PIDs>"
 	echo
-	echo "print the process private memory usage according to SMAPS"
+	echo "print the process(es) private memory usage according to SMAPS."
 	echo
 	echo "examples:"
 	echo "  ${0##*/} \$(pidof pulseaudio)"
 	echo "or:"
 	echo "  cd /proc"
-	echo "  for pid in [0-9]*; do ${0##*/} \$pid; done"
+	echo "  ${0##*/} [0-9]*"
 	echo
 	exit 1
 fi
 
-pid=$1
-smaps=/proc/$pid/smaps
-if [ \! -f $smaps ]; then
-	echo "ERROR: $smaps doesn't exist!"
-	exit 1
-fi
-cmd=$(tr '\0' ' ' < /proc/$pid/cmdline)
-if [ -z "$cmd" ]; then
-	echo "PID $pid is a kernel thread"
-	exit 1
-fi
-bin=${cmd%% *}
-opt=${cmd#* }
+output_smaps_info()
+{
+	if [ \! -d /proc/$1 ]; then
+		echo "ERROR: PID $1 doesn't exist!"
+		return
+	fi
+	smaps=/proc/$1/smaps
+	if [ \! -f $smaps ]; then
+		echo "ERROR: $smaps SMAPS file doesn't exist!"
+		return
+	fi
+	cmd=$(tr '\0' ' ' < /proc/$1/cmdline)
+	if [ -z "$cmd" ]; then
+		echo "PID $1 is a kernel thread"
+		return
+	fi
+	bin=${cmd%% *}
+	opt=${cmd#* }
+	echo "PID $1: ${bin##*/} $opt"
+	awk '
+/^Swap:/	  { swap   += $2; next }
+/^Private_Dirty:/ { pdirty += $2; next }
+/^Shared_Dirty:/  { sdirty += $2; next }
+/^Private_Clean:/ { pclean += $2; next }
+/^Pss:/		  { pss    += $2; next }
+END {
+	printf("- Swapped dirty memory:  %6d kB\n", swap);
+	printf("- Private dirty memory:  %6d kB\n", pdirty);
+	printf("- Shared  dirty memory:  %6d kB\n", sdirty);
+	printf("- Clean private memory:  %6d kB\n", pclean);
+	printf("- Proportional set size: %6d kB\n", pss);
+}' $smaps
+}
 
-swap=$(awk '/^Swap:/{mem+=$2}END{print mem}' $smaps)
-pdirty=$(awk '/^Private_Dirty:/{mem+=$2}END{print mem}' $smaps)
-sdirty=$(awk '/^Shared_Dirty:/{mem+=$2}END{print mem}' $smaps)
-pclean=$(awk '/^Private_Clean:/{mem+=$2}END{print mem}' $smaps)
-
-echo "PID $pid: ${bin##*/} $opt"
-echo "- Swapped dirty memory: $swap kB"
-echo "- Private dirty memory: $pdirty kB"
-echo "- Shared  dirty memory: $sdirty kB"
-echo "- Clean private memory: $pclean kB"
+for pid in $*; do
+	output_smaps_info $pid
+done

@@ -1,3 +1,10 @@
+sp-memusage (1.2.2) unstable; urgency=low
+
+  * mem-smaps-private script show PSS and it's possible to give it multiple PIDs.
+    Fixes: NB#174359
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Thu, 20 Jul 2010 19:11:40 +0200
+
 sp-memusage (1.2.1) unstable; urgency=low
 
   * Show correct process name when using the --exec option or when
