@@ -7,7 +7,7 @@ Standards-Version: 3.6.2
 
 Package: sp-memusage
 Architecture: any
-Depends: ${shlibs:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: memory usage reporting tool
  This provides a collection of memory usage monitoring tools and scripts.
   - Mallinfo library outputs values from the Glibc mallinfo() function, either
@@ -23,8 +23,9 @@ Description: memory usage reporting tool
 
 Package: sp-memusage-dbg
 Priority: extra
+Section: debug
 Architecture: any
-Depends: sp-memusage (=${binary:Version})
+Depends: ${misc:Depends}, sp-memusage (=${binary:Version})
 Description: Debug symbols for memusage
  Debug symbols for memusage tools and mallinfo library to use with
  tools such as GDB.
@@ -32,7 +33,7 @@ Description: Debug symbols for memusage
 Package: sp-memusage-tests
 Priority: extra
 Architecture: any
-Depends: ci-testing, sp-memusage (=${binary:Version})
+Depends: ${misc:Depends}, ci-testing, sp-memusage (=${binary:Version})
 XB-Maemo-CI-Packages: sp-memusage
 XB-Maemo-CI-Stage: fast, staging, acceptance
 Description: CI tests for sp-memusage
