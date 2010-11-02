@@ -142,7 +142,9 @@ int main(const int argc, const char* argv[])
    }
 
    /* We must print data always */
-   nice(-19);
+   if (nice(-19) == -1) {
+      perror("Warning: failed to change process priority.");
+   }
 
    printf ("time:\t\ttotal:\tavail:\tused:\tuse-%%:\tstatus:\n");
    while (1)
