@@ -95,7 +95,7 @@ binary-common:
 #	dh_installinfo
 	dh_installman
 	dh_link
-	dh_strip --dbg-package=sp-memusage
+	dh_strip --dbg-package=sp-memusage-dbg
 	dh_compress 
 	dh_fixperms
 #	dh_perl
