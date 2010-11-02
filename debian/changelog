@@ -63,7 +63,7 @@ sp-memusage (1.1.3) unstable; urgency=low
 
   * Add a manual page for mem-cpu-monitor. Fixes(NB#120058)
 
- -- Eero Tamminen <eero.tamminen@nokia.com>  Jul, 14 Jul 2009 13:10:40 +0200
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue, 14 Jul 2009 13:10:40 +0200
 
 sp-memusage (1.1.2) unstable; urgency=low
 
