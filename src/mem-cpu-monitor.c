@@ -904,6 +904,22 @@ app_data_scan_processes(app_data_t* self)
 	return rc;
 }
 
+/**
+ * Resets color flags for already monitored processes.
+ *
+ * @param[in]   the application data.
+ * @return
+ */
+static void
+app_data_set_nocolor_flag(app_data_t* self)
+{
+	proc_data_t* proc = self->proc_list;
+	while (proc) {
+		sp_report_header_set_color(proc->header, NULL, NULL);
+		proc = proc->next;
+	}
+}
+
 
 /**
  * Execute the specified application and start monitoring it.
@@ -998,6 +1014,8 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 			exit(0);
 		case 1001:
 			colors = false;
+			/* reset color flags for already monitored processes */
+			app_data_set_nocolor_flag(self);
 			break;
 		case 1002:
 			if ( (rc = app_data_add_proc(self, getpid())) != 0) {
