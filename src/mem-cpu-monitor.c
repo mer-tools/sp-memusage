@@ -167,7 +167,7 @@ usage()
 		progname, progname);
 }
 
-static struct option long_opts[] = {
+static const struct option long_opts[] = {
 	{"help", 0, 0, 'h'},
 	{"no-colors", 0, 0, 1001},
 	{"file", 1, 0, 'f'},
