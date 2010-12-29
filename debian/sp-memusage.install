@@ -2,7 +2,7 @@
 /usr/bin/mem-monitor
 /usr/bin/mem-cpu-monitor
 /usr/bin/mem-monitor-smaps 
-/usr/bin/mem-smaps-private
+/usr/bin/mem-smaps-*
 /usr/bin/mem-dirty-code-pages
 /usr/bin/run-with-mallinfo
 /usr/bin/run-with-memusage
