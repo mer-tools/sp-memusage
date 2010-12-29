@@ -1,3 +1,10 @@
+sp-memusage (1.2.3) unstable; urgency=low
+
+  * Fix mem-cpu-monitor --no-colors argument. Fixes: NB#213506
+  * New script: mem-smaps-totals
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Wed, 29 Dec 2010 12:48:32 +0200
+
 sp-memusage (1.2.2) unstable; urgency=low
 
   * mem-smaps-private script show PSS and it's possible to give it multiple
