@@ -71,6 +71,7 @@
 #include <math.h>
 #include <dirent.h>
 #include <sys/wait.h>
+#include <sys/time.h>
 
 #include <sp_measure.h>
 
