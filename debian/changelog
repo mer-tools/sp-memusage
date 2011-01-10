@@ -1,3 +1,9 @@
+sp-memusage (1.2.4) unstable; urgency=low
+
+  * sp-memusage-tests packaging fixed.
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Mon, 10 Jan 2011 10:15:11 +0200
+
 sp-memusage (1.2.3) unstable; urgency=low
 
   * Fix mem-cpu-monitor --no-colors argument. Fixes: NB#213506
