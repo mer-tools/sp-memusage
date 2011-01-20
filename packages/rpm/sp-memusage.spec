@@ -2,7 +2,7 @@ Name: sp-memusage
 Version: 1.2.3
 Release: 1%{?dist}
 Summary:  memory usage reporting tools
-Group: Development/Libraries
+Group: Development/Tools
 License: LGPLv2+	
 URL: http://www.gitorious.org/+maemo-tools-developers/maemo-tools/sp-memusage	
 Source: %{name}_%{version}.tar.gz
