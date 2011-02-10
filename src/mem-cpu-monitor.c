@@ -845,6 +845,26 @@ app_data_is_process_monitored(app_data_t* self, const char* name)
 
 
 /**
+ * Checks whether process exists on monitored process list.
+ *
+ * @param self[in]   the application data.
+ * @param pid[in]    the process identifier.
+ * @return           true if process exists
+ */
+static bool
+app_data_proc_exists(app_data_t* self, int pid)
+{
+	proc_data_t* proc = self->proc_list;
+	while (proc) {
+		if (FIELD_PROC_PID(&proc->data[0]) == pid)
+            return true;
+        proc = proc->next;
+    }
+    return false;
+}
+
+
+/**
  * Scans running processes and updates monitored process list
  *
  * @param[in] self    the application data.
@@ -873,7 +893,8 @@ app_data_scan_processes(app_data_t* self)
 						if (last_timestamp < fs.st_mtime) {
 							sp_measure_proc_data_t data;
 							if (sp_measure_init_proc_data(&data, pid, 0, NULL) == 0 && data.common->name &&
-									app_data_is_process_monitored(self, data.common->name)) {
+									app_data_is_process_monitored(self, data.common->name) &&
+									!app_data_proc_exists(self, pid) ) {
 								app_data_add_proc(self, pid);
 								rc = 1;
 							}
