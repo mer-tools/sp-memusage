@@ -14,15 +14,15 @@ tags:
 	ctags *.c *.h
 
 lib/mallinfo.so: src/mallinfo.c
-	@[ -d lib ] || mkdir lib
+	@mkdir -p lib
 	gcc -g -W -Wall -shared -O2 -fPIC  -Wl,-soname,mallinfo.so.0 -o $@ $^
 
 bin/mem-monitor: src/mem-monitor.c src/mem-monitor-util.c
-	@[ -d bin ] || mkdir bin
+	@mkdir -p bin
 	gcc -g -W -Wall -O2 -o $@ $+
 
 bin/mem-cpu-monitor: src/mem-cpu-monitor.c src/sp_report.c
-	@[ -d bin ] || mkdir bin
+	@mkdir -p bin
 	gcc -std=c99 -g -W -Wall -O2 -o $@ $+ -lspmeasure
 
 install:
