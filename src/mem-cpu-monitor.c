@@ -88,6 +88,8 @@ static float 			sys_cpu_change_threshold = 0.0f;
 
 static bool 			do_print_report_default = true;
 
+static bool 			do_full_process_scan = false;
+
 // Flags should have values of powers of 2
 enum OPTION_VALUE_FLAGS {
 	OF_PROC_MEM_CHANGES_ONLY 	= 1,
@@ -152,6 +154,7 @@ usage()
 		"     -n, --name=NAME       Monitor processes starting with NAME.\n"
 		"     -h, --help            Display this help.\n"
 		"     -x, --exec=CMD        Executes and starts monitoring the CMD command line.\n"
+		"     -F, --full-scan       Performs check of all processes for target name during every data poll.\n"
 		"\n"
 		"Examples:\n"
 		"\n"
@@ -181,6 +184,7 @@ static const struct option long_opts[] = {
 	{"interval", 1, 0, 'i'},
 	{"name", 1, 0, 'n'},
 	{"exec", 1, 0, 'x'},
+	{"full-scan", 0, 0, 'F'},
 	{0,0,0,0}
 };
 
@@ -887,19 +891,21 @@ app_data_scan_processes(app_data_t* self)
 			while ( (item = readdir(procDir)) ) {
 				int pid = atoi(item->d_name);
 				if (pid != 0) {
-					struct stat fs;
-					sprintf(buffer, "/proc/%s", item->d_name);
-					if (stat(buffer, &fs) == 0) {
-						if (last_timestamp < fs.st_mtime) {
-							sp_measure_proc_data_t data;
-							if (sp_measure_init_proc_data(&data, pid, 0, NULL) == 0 && data.common->name &&
-									app_data_is_process_monitored(self, data.common->name) &&
-									!app_data_proc_exists(self, pid) ) {
-								app_data_add_proc(self, pid);
-								rc = 1;
-							}
-							sp_measure_free_proc_data(&data);
+					bool check = do_full_process_scan;
+					if (!check) {
+						struct stat fs;
+						sprintf(buffer, "/proc/%s", item->d_name);
+						if (stat(buffer, &fs) == 0) check = last_timestamp < fs.st_mtime;
+					}
+					if (check) {
+						sp_measure_proc_data_t data;
+						if (sp_measure_init_proc_data(&data, pid, 0, NULL) == 0 && data.common->name &&
+								app_data_is_process_monitored(self, data.common->name) &&
+								!app_data_proc_exists(self, pid) ) {
+							app_data_add_proc(self, pid);
+							rc = 1;
 						}
+						sp_measure_free_proc_data(&data);
 					}
 				}
 			}
@@ -1019,7 +1025,7 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 {
 	int opt, rc;
 	char* output_path = NULL;
-	while ((opt = getopt_long(argc, argv, "p:hf:mcM:C:i:n:x:", long_opts, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "p:hf:mcM:C:i:n:x:F", long_opts, NULL)) != -1) {
 		/* getopt allows -<char><arg> which gives confusing results
 		 * when one writes --name foobar as -name.  Complain about it.
 		 */
@@ -1088,6 +1094,9 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 				fprintf(stderr, "ERROR: failed to execute command %s\n", optarg);
 				exit(1);
 			}
+			break;
+		case 'F':
+			do_full_process_scan = true;
 			break;
 		default:
 			usage();

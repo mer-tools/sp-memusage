@@ -46,6 +46,17 @@ Adds this instance of \fImem-cpu-monitor\fP to the list of monitored processes.
 -i, --interval=\fIINTERVAL\fP
 Data acquisition interval in seconds (decimal values are accepted).
 .TP 24
+-F, --full-scan
+By default only processes with updated (new) /proc/<pid> directories are
+checked if they must be monitored (with name matching --name option). This
+doesn't not work well with launcher processes, as the process name change
+occurs after it has been checked by mem-cpu-monitor.
+
+This option forces mem-cpu-monitor to scan all processes every time, 
+allowing to monitor applications started by launcher processes. Note that
+it will approximately double mem-cpu-monitor CPU usage affecting system CPU
+usage measurements.
+.TP 24
 -C, --system-cpu-change=\fITHRESHOLD\fP
 Perform output only when the system cpu usage is greater then the specified 
 \fITHRESHOLD\fP.
