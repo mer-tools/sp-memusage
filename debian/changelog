@@ -1,6 +1,7 @@
 sp-memusage (1.2.5) unstable; urgency=low
 
-  * Fixes: NB#226616 - mem-cpu-monitor log has multiple columns with the same PID
+  * Fixes: NB#226616 - mem-cpu-monitor log has multiple columns with the same
+    PID
 
  -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 24 Feb 2011 11:39:08 +0200
 
