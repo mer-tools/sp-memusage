@@ -155,6 +155,7 @@ usage()
 		"     -N, --name-created=NAME   Monitor processes created with name NAME.\n"
 		"     -h, --help            Display this help.\n"
 		"     -x, --exec=CMD        Executes and starts monitoring the CMD command line.\n"
+		"     -G, --cgroup=NAME     Monitors memory.memsw.usage_in_bytes for root or pointed cgroup e.g. applications.\n"
 		"\n"
 		"Examples:\n"
 		"\n"
@@ -185,6 +186,7 @@ static const struct option long_opts[] = {
 	{"name", 1, 0, 'n'},
 	{"name-created", 1, 0, 'N'},
 	{"exec", 1, 0, 'x'},
+	{"cgroup", 2, 0, 'G'},
 	{0,0,0,0}
 };
 
@@ -236,11 +238,11 @@ typedef struct proc_data_t {
  * functions.
  */
 typedef struct app_data_t {
+	int resource_flags;
+
 	sp_measure_sys_data_t sys_data[2];
 	sp_measure_sys_data_t* sys_data1;
 	sp_measure_sys_data_t* sys_data2;
-
-	int resource_flags;
 
 	proc_data_t* proc_list;
 	int proc_count;
@@ -257,6 +259,9 @@ typedef struct app_data_t {
 
 	// Bitmask holding a number of option flags
 	unsigned int option_flags;
+
+	/* cgroup root */
+	char* cgroup_root;
 } app_data_t;
 
 /*
@@ -340,6 +345,36 @@ write_sys_mem_change(char* buffer, int size, void* args)
 	strcpy(buffer, NO_DATA);
 	return sizeof(NO_DATA) - 1;
 }
+
+/**
+ * Writes used system memory cgroup information.
+ */
+int
+write_sys_mem_cgroup_used(char* buffer, int size, void* args)
+{
+	app_data_t* data = (app_data_t*)args;
+	if (FIELD_SYS_MEM_CGROUP(data->sys_data2) == ESPMEASURE_UNDEFINED) {
+		strcpy(buffer, NO_DATA);
+		return sizeof(NO_DATA) - 1;
+	}
+	return snprintf(buffer, size + 1, "%8d", FIELD_SYS_MEM_CGROUP(data->sys_data2));	return 0;
+}
+
+/**
+ * Writes used system memory cgroup change.
+ */
+int
+write_sys_mem_cgroup_change(char* buffer, int size, void* args)
+{
+	app_data_t* data = (app_data_t*)args;
+	int value;
+	if (sp_measure_diff_sys_mem_cgroup(data->sys_data1, data->sys_data2, &value) == 0) {
+		return snprintf(buffer, size + 1, "%+6d", value);
+	}
+	strcpy(buffer, NO_DATA);
+	return sizeof(NO_DATA) - 1;
+}
+
 
 /**
  * Writes system cpu usage data.
@@ -466,17 +501,20 @@ static int
 app_data_init_sys_snapshots(app_data_t* self)
 {
 	int rc = 0;
-	self->resource_flags = SNAPSHOT_SYS;
 
 	CHECK_SNAPSHOT_RC(sp_measure_init_sys_data(&self->sys_data[0], self->resource_flags, NULL),
-			"system /proc/ data snapshot initialization returned (%d).", rc |= __rc);
+			"system /proc/ data snapshot initialization returned (%x).", rc |= __rc);
 
 	CHECK_SNAPSHOT_RC(sp_measure_init_sys_data(&self->sys_data[1], 0, &self->sys_data[0]),
-			"system /proc/ data snapshot initialization returned (%d).", rc |= __rc);
+			"system /proc/ data snapshot initialization returned (%x).", rc |= __rc);
+
+	if (self->resource_flags & SNAPSHOT_SYS_MEM_CGROUPS) {
+		sp_measure_cgroup_select(&self->sys_data[0], self->cgroup_root);
+	}
 
 	/* take initial system snapshot */
 	CHECK_SNAPSHOT_RC(sp_measure_get_sys_data(&self->sys_data[0], self->resource_flags, NULL),
-			"System resource usage initial snapshot returned (%d).", rc = __rc);
+			"System resource usage initial snapshot returned (%x).", rc = __rc);
 
 	if (rc & SNAPSHOT_SYS_MEM_WATERMARK) {
 		fprintf(stderr, "Note: (Maemo) kernel memory limits not found.\n");
@@ -515,11 +553,21 @@ app_data_create_header(app_data_t* self)
 	if (sp_report_header_add_child(mem_header, "used:", 10, SP_REPORT_ALIGN_RIGHT, write_sys_mem_used, (void*)self) == NULL) return -ENOMEM;
 	if (sp_report_header_add_child(mem_header, "change:", 8, SP_REPORT_ALIGN_RIGHT, write_sys_mem_change, (void*)self) == NULL) return -ENOMEM;
 
+	/* cgroup header (if cgroups option was specified) */
+	if (self->resource_flags & SNAPSHOT_SYS_MEM_CGROUPS) {
+		sp_report_header_t* cgroup_header = sp_report_header_add_child(&self->root_header, "cgroup", 0, SP_REPORT_ALIGN_CENTER, NULL, NULL);
+		if (cgroup_header == NULL) return -ENOMEM;
+	    if (sp_report_header_add_child(cgroup_header, "used:", 10, SP_REPORT_ALIGN_RIGHT, write_sys_mem_cgroup_used, (void*)self) == NULL) return -ENOMEM;
+	    if (sp_report_header_add_child(cgroup_header, "change:", 8, SP_REPORT_ALIGN_RIGHT, write_sys_mem_cgroup_change, (void*)self) == NULL) return -ENOMEM;
+	}
+
 	/* cpu header containing cpu usage and average frequency columns */
 	sp_report_header_t* cpu_header = sp_report_header_add_child(&self->root_header, "system CPU", 0, SP_REPORT_ALIGN_CENTER, NULL, NULL);
 	if (cpu_header == NULL) return -ENOMEM;
 	if (sp_report_header_add_child(cpu_header, "%:", 6, SP_REPORT_ALIGN_RIGHT, write_sys_cpu_usage, (void*)self) == NULL) return -ENOMEM;
 	if (sp_report_header_add_child(cpu_header, "MHz:", 5, SP_REPORT_ALIGN_RIGHT, write_sys_cpu_freq, (void*)self) == NULL) return -ENOMEM;
+
+
 
 	return 0;
 }
@@ -534,8 +582,6 @@ static int
 app_data_init(app_data_t* self)
 {
 	int rc;
-	memset(self, 0, sizeof(app_data_t));
-
 	if ( (rc = app_data_init_sys_snapshots(self)) < 0) return rc;
 	if ( (rc = app_data_create_header(self)) != 0) return rc;
 
@@ -1025,7 +1071,7 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 {
 	int opt, rc;
 	char* output_path = NULL;
-	while ((opt = getopt_long(argc, argv, "p:hf:mcM:C:i:n:x:N:", long_opts, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "p:hf:mcM:C:i:n:x:N:G", long_opts, NULL)) != -1) {
 		/* getopt allows -<char><arg> which gives confusing results
 		 * when one writes --name foobar as -name.  Complain about it.
 		 */
@@ -1097,6 +1143,10 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 				exit(1);
 			}
 			break;
+		case 'G':
+			if (optarg) self->cgroup_root = strdup(optarg);
+		    self->resource_flags |= SNAPSHOT_SYS_MEM_CGROUPS;
+			break;
 		case 'F':
 			break;
 		default:
@@ -1156,7 +1206,7 @@ int main(int argc, char** argv)
 {
 	bool is_atty = false;
 	int rows=0, lines_printed=0;
-	app_data_t app_data;
+	app_data_t app_data = {.resource_flags = SNAPSHOT_SYS};
 	int rc = 0, value;
 	sp_measure_proc_data_t* proc_data_swap;
 	sp_measure_sys_data_t* sys_data_swap;
@@ -1164,6 +1214,8 @@ int main(int argc, char** argv)
 	bool do_print_header = true;
 	bool do_print_report;
 	struct timeval timestamp = {0, 0};
+
+	parse_cmdline(argc, argv, &app_data);
 
 	if (app_data_init(&app_data) < 0) {
 		fprintf(stderr, "ERROR: program initialization failed.\n");
@@ -1177,7 +1229,6 @@ int main(int argc, char** argv)
 		exit(-1);
 	}
 
-	parse_cmdline(argc, argv, &app_data);
 	if (nice(-19) == -1) {
 		perror("Warning: failed to change process priority.");
 	}
