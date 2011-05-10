@@ -1,5 +1,6 @@
-sp-memusage (1.2.7), ???:
-  * Add container group memory usage option to mem-cpu-monitor
+sp-memusage (1.2.7), 10 May 2011:
+  * Add Control Group (aka. Cgroup) memory usage monitoring option to
+    mem-cpu-monitor
 
 sp-memusage (1.2.6), 14 Apr 2011:
   * mem-cpu-monitor didn't notice when named process starts

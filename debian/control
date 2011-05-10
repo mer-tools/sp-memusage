@@ -2,7 +2,7 @@ Source: sp-memusage
 Section: misc
 Priority: optional
 Maintainer: Eero Tamminen <eero.tamminen@nokia.com>
-Build-Depends: debhelper (>= 4.0.0), libsp-measure-dev
+Build-Depends: debhelper (>= 4.0.0), libsp-measure-dev (>= 1.3)
 Standards-Version: 3.6.2
 
 Package: sp-memusage

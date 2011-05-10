@@ -1,3 +1,10 @@
+sp-memusage (1.2.7) unstable; urgency=low
+
+  * Add Control Group memory usage monitoring option to mem-cpu-monitor -
+    NB#253949
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Tue, 10 May 2011 14:46:54 +0300
+
 sp-memusage (1.2.6) unstable; urgency=low
 
   * Fixes: NB#245565 - mem-cpu-monitor doesn't notice when named process
