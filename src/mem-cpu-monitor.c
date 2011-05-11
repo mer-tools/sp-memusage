@@ -584,8 +584,6 @@ app_data_init(app_data_t* self)
 	int rc;
 	if ( (rc = app_data_init_sys_snapshots(self)) < 0) return rc;
 	if ( (rc = app_data_create_header(self)) != 0) return rc;
-
-	self->sleep_interval = DEFAULT_SLEEP_INTERVAL;
 	return 0;
 }
 
@@ -1206,7 +1204,10 @@ int main(int argc, char** argv)
 {
 	bool is_atty = false;
 	int rows=0, lines_printed=0;
-	app_data_t app_data = {.resource_flags = SNAPSHOT_SYS};
+	app_data_t app_data = {
+			.resource_flags = SNAPSHOT_SYS,
+			.sleep_interval = DEFAULT_SLEEP_INTERVAL,
+	};
 	int rc = 0, value;
 	sp_measure_proc_data_t* proc_data_swap;
 	sp_measure_sys_data_t* sys_data_swap;
