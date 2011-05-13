@@ -1,3 +1,7 @@
+sp-memusage (1.2.9), 13 May 2011:
+  * Fix mem-cpu-monitor --pid option breakage in 1.2.7.
+  * Fix mem-cpu-monitor column coloring.
+
 sp-memusage (1.2.8), 12 May 2011:
   * Fix mem-cpu-monitor interval (-i) option breakage in 1.2.7.
 
