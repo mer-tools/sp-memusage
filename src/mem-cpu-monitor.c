@@ -130,6 +130,8 @@ static void quit_app(int sig) { (void)sig; if (quit++) _exit(1); }
 #define NO_DATA    "n/a"
 
 
+
+
 static void
 usage()
 {
@@ -263,6 +265,9 @@ typedef struct app_data_t {
 	/* cgroup root */
 	char* cgroup_root;
 } app_data_t;
+
+/* function declarations */
+static int proc_data_create_header(proc_data_t* proc, app_data_t* app_data);
 
 /*
  * Writer functions used to output the system/process statistics.
@@ -568,6 +573,12 @@ app_data_create_header(app_data_t* self)
 	if (sp_report_header_add_child(cpu_header, "MHz:", 5, SP_REPORT_ALIGN_RIGHT, write_sys_cpu_freq, (void*)self) == NULL) return -ENOMEM;
 
 
+	/* create headers for monitored processes */
+	proc_data_t* proc = self->proc_list;
+	while (proc) {
+		proc_data_create_header(proc, self);
+		proc = proc->next;
+	}
 
 	return 0;
 }
@@ -660,7 +671,6 @@ proc_data_format_title(const proc_data_t* proc, char* buffer, int size)
 static int
 proc_data_create(proc_data_t** pproc, int pid, app_data_t* app_data)
 {
-	char buffer[256];
 	int rc = 0;
 	*pproc = (proc_data_t*)malloc(sizeof(proc_data_t));
 	proc_data_t* proc = *pproc;
@@ -672,7 +682,6 @@ proc_data_create(proc_data_t** pproc, int pid, app_data_t* app_data)
 	*proc->cmdline = '\0';
 
 	/* initialize process snapshots */
-
 	CHECK_SNAPSHOT_RC(sp_measure_init_proc_data(&proc->data[0], pid, SNAPSHOT_PROC, NULL),
 			"proc /proc/<pid>/ data snapshot initialization returned (%d).", rc |= __rc);
 
@@ -686,7 +695,19 @@ proc_data_create(proc_data_t** pproc, int pid, app_data_t* app_data)
 			"proc /proc/<pid>/ data snapshot returned (%d).", rc |= __rc);
 	proc->resource_flags &= (~rc);
 
-	/* create process header */
+	return rc;
+}
+
+/**
+ * Create report header for the specified process.
+ *
+ * @param[in] proc      the process data.
+ * @param[in] app_data  the application data.
+ */
+static int
+proc_data_create_header(proc_data_t* proc, app_data_t* app_data)
+{
+	char buffer[256];
 	proc_data_format_title(proc, buffer, sizeof(buffer));
 	proc->header = sp_report_header_add_child(&app_data->root_header, buffer, 30, SP_REPORT_ALIGN_LEFT, NULL, NULL);
 	if (proc->header == NULL) return -ENOMEM;
@@ -695,9 +716,13 @@ proc_data_create(proc_data_t** pproc, int pid, app_data_t* app_data)
 	if (sp_report_header_add_child(proc->header, "change:", 8, SP_REPORT_ALIGN_RIGHT, write_proc_mem_change, (void*)proc) == NULL) return -ENOMEM;
 	if (sp_report_header_add_child(proc->header, "CPU-%:", 7, SP_REPORT_ALIGN_RIGHT, write_proc_cpu_usage, (void*)proc) == NULL) return -ENOMEM;
 
-	proc->has_data = true;
+	/* set process column color if necessary */
+	if (colors && (app_data->proc_count & 1)) {
+		sp_report_header_set_color(proc->header, COLOR_PROCESS, COLOR_CLEAR);
+	}
 
-	return rc;
+	proc->has_data = true;
+	return 0;
 }
 
 /**
@@ -760,15 +785,15 @@ proc_data_check_cmdline(proc_data_t* proc) {
  * @param pid[in]    the process identifier.
  * @return           0 for success.
  */
-static int
+static proc_data_t*
 app_data_add_proc(app_data_t* self, int pid)
 {
 	int rc;
-	proc_data_t* proc;
+	proc_data_t* proc = NULL;
 	/* create process data structure */
 	if ( (rc = proc_data_create(&proc, pid, self)) != 0) {
 		proc_data_free(proc);
-		return rc;
+		return NULL;
 	}
 	/* the first process to be monitored, set as the start of process list*/
 	if (self->proc_list == NULL) {
@@ -783,11 +808,7 @@ app_data_add_proc(app_data_t* self, int pid)
 		next->next = proc;
 	}
 	self->proc_count++;
-	/* set process column color if necessary */
-	if (colors && (self->proc_count & 1)) {
-		sp_report_header_set_color(proc->header, COLOR_PROCESS, COLOR_CLEAR);
-	}
-	return 0;
+	return proc;
 }
 
 /**
@@ -946,7 +967,8 @@ app_data_scan_processes(app_data_t* self)
 						if (sp_measure_init_proc_data(&data, pid, 0, NULL) == 0 && data.common->name &&
 								app_data_is_process_monitored(self, data.common->name) &&
 								!app_data_proc_exists(self, pid) ) {
-							app_data_add_proc(self, pid);
+							proc_data_t* proc = app_data_add_proc(self, pid);
+							if (proc) proc_data_create_header(proc, self);
 							rc = 1;
 						}
 						sp_measure_free_proc_data(&data);
@@ -974,22 +996,6 @@ app_data_scan_processes(app_data_t* self)
 		}
 	}
 	return rc;
-}
-
-/**
- * Resets color flags for already monitored processes.
- *
- * @param[in]   the application data.
- * @return
- */
-static void
-app_data_set_nocolor_flag(app_data_t* self)
-{
-	proc_data_t* proc = self->proc_list;
-	while (proc) {
-		sp_report_header_set_color(proc->header, NULL, NULL);
-		proc = proc->next;
-	}
 }
 
 
@@ -1049,7 +1055,7 @@ execute_application(app_data_t* self, const char* cmd)
 	if (pid == -1) {
 		return -1;
 	}
-	return app_data_add_proc(self, pid);
+	return app_data_add_proc(self, pid) == 0 ? -1 : 0;
 }
 
 /**
@@ -1067,7 +1073,7 @@ static void process_closed(int sig __attribute__((unused)))
 static void
 parse_cmdline(int argc, char** argv, app_data_t* self)
 {
-	int opt, rc;
+	int opt;
 	char* output_path = NULL;
 	while ((opt = getopt_long(argc, argv, "p:hf:mcM:C:i:n:x:N:G", long_opts, NULL)) != -1) {
 		/* getopt allows -<char><arg> which gives confusing results
@@ -1086,20 +1092,18 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 			exit(0);
 		case 1001:
 			colors = false;
-			/* reset color flags for already monitored processes */
-			app_data_set_nocolor_flag(self);
 			break;
 		case 1002:
-			if ( (rc = app_data_add_proc(self, getpid())) != 0) {
-				fprintf(stderr, "Error %d during process %d monitoring initialization!\n",
-							rc, getpid());
+			if ( app_data_add_proc(self, getpid()) == NULL) {
+				fprintf(stderr, "Error during process %d monitoring initialization!\n",
+							getpid());
 				exit(-1);
 			}
 			break;
 		case 'p':
-			if ( (rc = app_data_add_proc(self, atoi(optarg))) != 0) {
-				fprintf(stderr, "Error %d during process %d monitoring initialization!\n",
-							rc, atoi(optarg));
+			if (app_data_add_proc(self, atoi(optarg)) == NULL) {
+				fprintf(stderr, "Error during process %d monitoring initialization!\n",
+							atoi(optarg));
 				exit(-1);
 			}
 			break;
@@ -1164,9 +1168,9 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 		output = stdout;
 	}
 	while (optind < argc) {
-		if ( (rc = app_data_add_proc(self, atoi(argv[optind]))) != 0) {
-			fprintf(stderr, "Error %d occurred during process %d monitoring initialization!\n",
-						rc, atoi(argv[optind]));
+		if (app_data_add_proc(self, atoi(argv[optind])) == NULL) {
+			fprintf(stderr, "Error occurred during process %d monitoring initialization!\n",
+						atoi(argv[optind]));
 			exit(-1);
 		}
 		++optind;
