@@ -267,7 +267,7 @@ typedef struct app_data_t {
 } app_data_t;
 
 /* function declarations */
-static int proc_data_create_header(proc_data_t* proc, app_data_t* app_data);
+static int proc_data_create_header(proc_data_t* proc, app_data_t* app_data, int index);
 
 /*
  * Writer functions used to output the system/process statistics.
@@ -575,8 +575,9 @@ app_data_create_header(app_data_t* self)
 
 	/* create headers for monitored processes */
 	proc_data_t* proc = self->proc_list;
+	int index = 0;
 	while (proc) {
-		proc_data_create_header(proc, self);
+		proc_data_create_header(proc, self, index++);
 		proc = proc->next;
 	}
 
@@ -703,9 +704,10 @@ proc_data_create(proc_data_t** pproc, int pid, app_data_t* app_data)
  *
  * @param[in] proc      the process data.
  * @param[in] app_data  the application data.
+ * @param[in] index     the process index in app_data process list.
  */
 static int
-proc_data_create_header(proc_data_t* proc, app_data_t* app_data)
+proc_data_create_header(proc_data_t* proc, app_data_t* app_data, int index)
 {
 	char buffer[256];
 	proc_data_format_title(proc, buffer, sizeof(buffer));
@@ -717,7 +719,7 @@ proc_data_create_header(proc_data_t* proc, app_data_t* app_data)
 	if (sp_report_header_add_child(proc->header, "CPU-%:", 7, SP_REPORT_ALIGN_RIGHT, write_proc_cpu_usage, (void*)proc) == NULL) return -ENOMEM;
 
 	/* set process column color if necessary */
-	if (colors && (app_data->proc_count & 1)) {
+	if (colors && !(index & 1)) {
 		sp_report_header_set_color(proc->header, COLOR_PROCESS, COLOR_CLEAR);
 	}
 
@@ -968,7 +970,7 @@ app_data_scan_processes(app_data_t* self)
 								app_data_is_process_monitored(self, data.common->name) &&
 								!app_data_proc_exists(self, pid) ) {
 							proc_data_t* proc = app_data_add_proc(self, pid);
-							if (proc) proc_data_create_header(proc, self);
+							if (proc) proc_data_create_header(proc, self, self->proc_count - 1);
 							rc = 1;
 						}
 						sp_measure_free_proc_data(&data);
