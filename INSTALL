@@ -1,0 +1,22 @@
+sp-memusage installation instructions
+====================================
+
+1. Compiling from sources
+-------------------------
+
+1.1 Dependencies
+----------------
+
+The following packages must be installed before sp-memusage:
+  libsp-measure-dev(>=1.3)
+
+1.2 Compilation & Installation
+------------------------------
+
+To compile sp-mnemusage extract the source archive and do the following
+steps in the sp-memusage directory:
+
+  1) Build the sp-memusage binaries with "make"
+  2) Install the bult binaries with "make install"
+  
+
