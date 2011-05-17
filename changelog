@@ -1,3 +1,6 @@
+sp-memusage (1.2.10), 17 May 2011:
+  * Fix mem-smaps-totals incorrect help output.
+
 sp-memusage (1.2.9), 13 May 2011:
   * Fix mem-cpu-monitor --pid option breakage in 1.2.7.
   * Fix mem-cpu-monitor column coloring.
