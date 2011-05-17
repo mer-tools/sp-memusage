@@ -1,3 +1,9 @@
+sp-memusage (1.2.10-1) unstable; urgency=low
+
+  * Fixes: NB#256242 - mem-smaps-totals: in-program synopsis is incorrect
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Tue, 17 May 2011 14:59:48 +0300
+
 sp-memusage (1.2.9) unstable; urgency=low
 
   * Fixes: NB#255628 - mem-cpu-monitor --pid option does not work
