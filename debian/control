@@ -1,0 +1,40 @@
+Source: sp-memusage
+Section: misc
+Priority: optional
+Maintainer: Eero Tamminen <eero.tamminen@nokia.com>
+Build-Depends: debhelper (>= 4.0.0), libsp-measure-dev (>= 1.3)
+Standards-Version: 3.6.2
+
+Package: sp-memusage
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: memory usage reporting tool
+ This provides a collection of memory usage monitoring tools and scripts.
+  - Mallinfo library outputs values from the Glibc mallinfo() function, either
+    with SIGUSR1 like libleaks, or at given intervals. I.e. it tells how much
+    allocated and freed (but not returned to system) memory is in the C-library
+    memory pool for the process.  You can use this to detect memory
+    fragmentation.
+  - mem-*monitor* tools output system and process memory (and CPU) usage
+    overviews at specified intervals.
+  - There are also some extra scripts to get memory usage details from
+    processes.
+ Manual pages tell more about the tools and scripts.
+
+Package: sp-memusage-dbg
+Priority: extra
+Section: debug
+Architecture: any
+Depends: ${misc:Depends}, sp-memusage (=${binary:Version})
+Description: Debug symbols for memusage
+ Debug symbols for memusage tools and mallinfo library to use with
+ tools such as GDB.
+
+Package: sp-memusage-tests
+Priority: extra
+Architecture: any
+Depends: ${misc:Depends}, ci-testing, sp-memusage (=${binary:Version})
+XB-Maemo-CI-Packages: sp-memusage
+XB-Maemo-CI-Stage: fast, staging, acceptance
+Description: CI tests for sp-memusage
+ CI tests for sp-memusage

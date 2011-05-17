@@ -1,0 +1,219 @@
+sp-memusage (1.2.9) unstable; urgency=low
+
+  * Fixes: NB#255628 - mem-cpu-monitor --pid option does not work
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Fri, 13 May 2011 15:52:43 +0300
+
+sp-memusage (1.2.8) unstable; urgency=low
+
+  * Fixes: NB#254970 - mem-cpu-monitor -i option doesn't have an effect
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 12 May 2011 10:40:42 +0300
+
+sp-memusage (1.2.7) unstable; urgency=low
+
+  * Add Control Group memory usage monitoring option to mem-cpu-monitor -
+    NB#253949
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Tue, 10 May 2011 14:46:54 +0300
+
+sp-memusage (1.2.6) unstable; urgency=low
+
+  * Fixes: NB#245565 - mem-cpu-monitor doesn't notice when named process
+    starts
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 14 Apr 2011 14:46:37 +0300
+
+sp-memusage (1.2.5) unstable; urgency=low
+
+  * Fixes: NB#226616 - mem-cpu-monitor log has multiple columns with the same
+    PID
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 24 Feb 2011 11:39:08 +0200
+
+sp-memusage (1.2.4) unstable; urgency=low
+
+  * sp-memusage-tests packaging fixed.
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Mon, 10 Jan 2011 10:15:11 +0200
+
+sp-memusage (1.2.3) unstable; urgency=low
+
+  * Fix mem-cpu-monitor --no-colors argument. Fixes: NB#213506
+  * New script: mem-smaps-totals
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Wed, 29 Dec 2010 12:48:32 +0200
+
+sp-memusage (1.2.2) unstable; urgency=low
+
+  * mem-smaps-private script show PSS and it's possible to give it multiple
+    PIDs. Fixes: NB#174359
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Thu, 20 Jul 2010 19:11:40 +0200
+
+sp-memusage (1.2.1) unstable; urgency=low
+
+  * Show correct process name when using the --exec option or when
+    the process name is otherwise changes.  Fixes: NB#159709
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Thu, 10 Jun 2010 14:11:40 +0200
+
+sp-memusage (1.2) unstable; urgency=low
+
+  * mem-cpu-monitor argument parsing change:
+    - setting interval requires use of -i option
+    - align names of process option names with system options
+      (mem-changes -> mem-change, cpu-changes -> cpu-change)
+  * mem-cpu-monitor updates:
+    - support for sub-second intervals
+    - refactored to use/depend on the new libsp-measure library
+    - support for starting monitored process (-exec) and monitoring
+      processes starting after mem-cpu-monitor starts (-name).
+    - if some resource subset is unavailable, warn about it & exclude
+      the resource from further processing, but let program continue
+      (e.g. if kernel is lacking CPU frequency scaling)
+    Fixes: NB#161734, NB#159709, NB#165657
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Fri, 16 Apr 2010 16:11:40 +0200
+
+sp-memusage (1.1.7) unstable; urgency=low
+
+  * CI tests added.
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Mon, 18 Jan 2010 11:11:40 +0200
+
+sp-memusage (1.1.6) unstable; urgency=low
+
+  * Do not shows private clean data changes in the "changes" column.
+    Fixes: NB#151783
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Mon, 18 Jan 2010 11:11:40 +0200
+
+sp-memusage (1.1.5) unstable; urgency=low
+
+  * Support swap in mem-smaps-private and mem-dirty-code-pages scripts.
+    Fixes: NB#144137
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue,  3 Nov 2009 13:36:40 +0200
+
+sp-memusage (1.1.4) unstable; urgency=low
+
+  * mem-cpu-monitor:
+   + mem-cpu-monitor: report CPU speed. Fixes: NB#139669
+   + mem-cpu-monitor: implementation of options that make it output info only
+     when something changes. Fixes: NB#122024
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Mon, 26 Oct 2009 10:39:35 +0200
+
+sp-memusage (1.1.3) unstable; urgency=low
+
+  * Add a manual page for mem-cpu-monitor. Fixes(NB#120058)
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue, 14 Jul 2009 13:10:40 +0200
+
+sp-memusage (1.1.2) unstable; urgency=low
+
+  * Always have something in BL column, if it's shown. Fixes(NB#116477)
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Mon, 15 Jun 2009 17:18:40 +0200
+
+sp-memusage (1.1.1) unstable; urgency=low
+
+  * Tommi's rewrite of mem-cpu-monitor.  Supports giving multiple pids,
+    has colors when running on tty, flushes output when redirected to
+    file, /proc reading refactored to common file shared with
+    mem-monitor. Fixes: NB#116477
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Thu, 29 May 2009  19:10:10 +0200
+
+sp-memusage (1.1.0) unstable; urgency=low
+
+  * mem-cpu-monitor added. Fixes(NB#108493)
+
+ -- Kiryl Shutsemau <kiryl.shutsemau@nokia.com>  Thu, 28 Apr 2009 15:18:40 +0200
+
+sp-memusage (1.0.13) unstable; urgency=low
+
+  * Fixed a small issue with the changelog.
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 13 Nov 2008 15:47:07 +0200
+
+sp-memusage (1.0.12) unstable; urgency=low
+
+  * SwapCached is now also taken in account while calculating memory
+    statistics. Fixes: NB#92513
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 13 Nov 2008 15:30:23 +0200
+
+sp-memusage (1.0.11) unstable; urgency=low
+
+  * Some minor packaging issues reported by Lintian have been fixed.
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Wed, 17 Sep 2008 17:18:05 +0300
+
+sp-memusage (1.0.10) unstable; urgency=low
+
+  * Mem-monitor-smaps now uses the latest pid returned when there are
+    multiple matches. Fixes NB #88304
+  * As 'available' is more approriate than 'free' in the context of
+    generated reports, use that instead.
+  * New option (-c) has been added to mem-monitor-smaps. Manual page has
+    been updated to include these changes.
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 11 Sep 2008 14:52:29 +0300
+
+sp-memusage (1.0.9) unstable; urgency=low
+
+  * mem-monitor-smaps: Private clean information has been added. 
+    Fixes: NB#84445
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 17 Apr 2008 16:46:46 +0300
+
+sp-memusage (1.0.8) unstable; urgency=low
+
+  * Mem-monitor-smaps shows now memory usage changes in addition to
+    totals.
+  * Argument checking improvements in mem-monitor-smaps
+  * Fixes: NB#84258
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue, 15 Apr 2008 16:59:08 +0300
+
+sp-memusage (1.0.7) unstable; urgency=low
+
+  * New helper script (run-with-memusage) has been added.
+  * Made naming of existing helper scripts more consistent:
+    memusage -> mem- monitor,
+    proc-memusage -> mem-monitor-proc,
+    sum-smaps-private -> mem-smaps-private,
+    sum-dirty-code-pages -> mem-dirty-code-pages
+  * Fixes: NB#82164
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu, 20 Mar 2008 12:45:22 +0200
+
+sp-memusage (1.0.6) unstable; urgency=low
+
+  * New tool (proc-memusage) and correspoding documentation have been
+    added. Fixes: NB#81255
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Mon,  3 Mar 2008 16:24:50 +0200
+
+sp-memusage (1.0.5) unstable; urgency=low
+
+  * Fixed SONAME missing from libmalloc to satisfy Lintian.
+  * Fixes: NB#79547
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Wed,  6 Feb 2008 15:43:48 +0200
+
+sp-memusage (1.0.4) unstable; urgency=low
+
+  * Include run-with-mallinfo convenience script for using mallinfo in
+    Scratchbox. Fixes: NB#73300
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Tue,  6 Nov 2007 16:42:11 +0200
+
+sp-memusage (1.0.3) unstable; urgency=low
+
+  * Separated sp-memusage completely from sp-libleaks source package
+  * Fixes: NB#69043
+
+ -- Eero Tamminen <eero.tamminen@nokia.com>  Thu,  4 Oct 2007 10:15:21 +0300
