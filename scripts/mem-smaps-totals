@@ -35,8 +35,8 @@ usage ()
 	echo "be quoted with '\\' if they are supposed to be matched literally!"
 	echo
 	echo "SMAPS field pattern needs to start with one of the SMAPS field names:"
-	echo "  Size, Rss, Pss, Shared_Clean, Shared_Dirty,"
-	echo "  Private_Clean, Private_Dirty, Referenced, Swap."
+	echo "  Size, Rss, Pss, Shared_Clean, Shared_Dirty, Private_Clean,"
+	echo "  Private_Dirty, Referenced, Anonymous, Swap, Locked."
 	echo
 	echo "Examples:"
 	echo "- what processes use most RAM:"
@@ -60,19 +60,25 @@ usage ()
 if [ $# -ne 2 ]; then
 	usage "wrong number of arguments"
 fi
-if [ -z "$(echo ""$2""|grep -e '^Size' -e '^Rss' -e '^Pss' -e '^Shared_Clean' -e '^Shared_Dirty' -e '^Private_Clean' -e '^Private_Dirty' -e '^Referenced' -e '^Swap')" ]; then
-	usage "unknown SMAPS field used in '$2'"
-fi
 
 mapping=$(echo "$1"|sed 's%/%\\/%g')	# quote awk pattern delimiters
 field="${2%%:*}"			# SMAPS field used for checking
 line="$2"				# full SMAPS field line to match
 
-heading="  Size:\t\t PID:\tName:\n"
+if [ -z "$(echo ""$field""|grep -e '^Size$' -e '^Rss$' -e '^Pss$' -e '^Shared_Clean$' -e '^Shared_Dirty$' -e '^Private_Clean$' -e '^Private_Dirty$' -e '^Referenced$' -e '^Anonymous$' -e '^Swap$' -e '^Locked$')" ]; then
+	usage "unknown SMAPS field used in '$field'"
+fi
 
-echo "Finding process totals for field '$field' matching line '$line' in '$mapping' mappings..."
+if [ "$field" = "$line" ]; then
+	echo "Finding process totals for field '$field' in '$mapping' mappings..."
+else
+	echo "Finding process totals for field '$field' matching line '$line' in '$mapping' mappings..."
+fi
+
 echo
 cd /proc
+
+heading="  Size:\t\t PID:\tName:\n"
 
 printf "$heading"
 for pid in [0-9]*; do
