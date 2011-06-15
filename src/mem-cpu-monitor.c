@@ -514,7 +514,11 @@ app_data_init_sys_snapshots(app_data_t* self)
 			"system /proc/ data snapshot initialization returned (%x).", rc |= __rc);
 
 	if (self->resource_flags & SNAPSHOT_SYS_MEM_CGROUPS) {
-		sp_measure_cgroup_select(&self->sys_data[0], self->cgroup_root);
+		const char* monitor_group = sp_measure_cgroup_select(&self->sys_data[0], self->cgroup_root);
+		if (self->cgroup_root && !strstr(monitor_group, self->cgroup_root)) {
+			fprintf(stderr, "WARNING: Failed to find the specified cgroup: %s. Switching to root monitoring.\n",
+					self->cgroup_root);
+		}
 	}
 
 	/* take initial system snapshot */
@@ -1170,7 +1174,11 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 		output = stdout;
 	}
 	while (optind < argc) {
-		if (app_data_add_proc(self, atoi(argv[optind])) == NULL) {
+		int pid = atoi(argv[optind]);
+		if (!pid) {
+			fprintf(stderr, "WARNING: Failed to parse target process pid: %s\n", argv[optind]);
+		}
+		else if (app_data_add_proc(self, pid) == NULL) {
 			fprintf(stderr, "Error occurred during process %d monitoring initialization!\n",
 						atoi(argv[optind]));
 			exit(-1);
