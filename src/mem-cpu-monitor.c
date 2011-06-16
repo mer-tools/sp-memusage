@@ -90,6 +90,10 @@ static bool 			do_print_report_default = true;
 
 static bool 			do_full_process_scan = false;
 
+
+/* name of the monitored cgroup */
+static const char* monitor_cgroup;
+
 // Flags should have values of powers of 2
 enum OPTION_VALUE_FLAGS {
 	OF_PROC_MEM_CHANGES_ONLY 	= 1,
@@ -514,10 +518,10 @@ app_data_init_sys_snapshots(app_data_t* self)
 			"system /proc/ data snapshot initialization returned (%x).", rc |= __rc);
 
 	if (self->resource_flags & SNAPSHOT_SYS_MEM_CGROUPS) {
-		const char* monitor_group = sp_measure_cgroup_select(&self->sys_data[0], self->cgroup_root);
-		if (self->cgroup_root && !strstr(monitor_group, self->cgroup_root)) {
-			fprintf(stderr, "WARNING: Failed to find the specified cgroup: %s. Switching to root monitoring.\n",
-					self->cgroup_root);
+		monitor_cgroup = sp_measure_cgroup_select(&self->sys_data[0], self->cgroup_root);
+		if (self->cgroup_root && !strstr(monitor_cgroup, self->cgroup_root)) {
+			fprintf(stderr, "ERROR: Failed to find the specified cgroup: %s\n", self->cgroup_root);
+			exit(-1);
 		}
 	}
 
@@ -564,7 +568,9 @@ app_data_create_header(app_data_t* self)
 
 	/* cgroup header (if cgroups option was specified) */
 	if (self->resource_flags & SNAPSHOT_SYS_MEM_CGROUPS) {
-		sp_report_header_t* cgroup_header = sp_report_header_add_child(&self->root_header, "cgroup", 0, SP_REPORT_ALIGN_CENTER, NULL, NULL);
+		char group_title[512];
+		snprintf(group_title, sizeof(group_title), "[%s]", strrchr(monitor_cgroup, '/') + 1);
+		sp_report_header_t* cgroup_header = sp_report_header_add_child(&self->root_header, group_title, 0, SP_REPORT_ALIGN_CENTER, NULL, NULL);
 		if (cgroup_header == NULL) return -ENOMEM;
 	    if (sp_report_header_add_child(cgroup_header, "used:", 10, SP_REPORT_ALIGN_RIGHT, write_sys_mem_cgroup_used, (void*)self) == NULL) return -ENOMEM;
 	    if (sp_report_header_add_child(cgroup_header, "change:", 8, SP_REPORT_ALIGN_RIGHT, write_sys_mem_cgroup_change, (void*)self) == NULL) return -ENOMEM;
@@ -1081,7 +1087,7 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 {
 	int opt;
 	char* output_path = NULL;
-	while ((opt = getopt_long(argc, argv, "p:hf:mcM:C:i:n:x:N:G", long_opts, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "p:hf:mcM:C:i:n:x:N:G:", long_opts, NULL)) != -1) {
 		/* getopt allows -<char><arg> which gives confusing results
 		 * when one writes --name foobar as -name.  Complain about it.
 		 */
