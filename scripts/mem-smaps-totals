@@ -25,7 +25,7 @@ usage ()
 {
 	name=${0##*/}
 	echo
-	echo "$name <SMAPS mapping pattern> <SMAPS field pattern>"
+	echo "$name [-q] <SMAPS mapping pattern> <SMAPS field pattern>"
 	echo
 	echo "Shows size-sorted totals for given mappings for all the processes."
 	echo
@@ -37,6 +37,8 @@ usage ()
 	echo "SMAPS field pattern needs to start with one of the SMAPS field names:"
 	echo "  Size, Rss, Pss, Shared_Clean, Shared_Dirty, Private_Clean,"
 	echo "  Private_Dirty, Referenced, Anonymous, Swap, Locked."
+	echo
+	echo "  (-q = be quit, output just data, no headings)"
 	echo
 	echo "Examples:"
 	echo "- what processes use most RAM:"
@@ -57,6 +59,12 @@ usage ()
 	exit 1
 }
 
+verbose=1
+if [ "$1" = "-q" ]; then
+	verbose=0
+	shift
+fi
+
 if [ $# -ne 2 ]; then
 	usage "wrong number of arguments"
 fi
@@ -69,18 +77,19 @@ if [ -z "$(echo ""$field""|grep -e '^Size$' -e '^Rss$' -e '^Pss$' -e '^Shared_Cl
 	usage "unknown SMAPS field used in '$field'"
 fi
 
-if [ "$field" = "$line" ]; then
-	echo "Finding process totals for field '$field' in '$mapping' mappings..."
-else
-	echo "Finding process totals for field '$field' matching line '$line' in '$mapping' mappings..."
+if [ $verbose -gt 0 ]; then
+	if [ "$field" = "$line" ]; then
+		echo "Finding process totals for field '$field' in '$mapping' mappings..."
+	else
+		echo "Finding process totals for field '$field' matching line '$line' in '$mapping' mappings..."
+	fi
+
+	echo
+	heading="  Size:\t\t PID:\tName:\n"
+	printf "$heading"
 fi
 
-echo
 cd /proc
-
-heading="  Size:\t\t PID:\tName:\n"
-
-printf "$heading"
 for pid in [0-9]*; do
 	name=$(tr '\0' ' ' < $pid/cmdline|cut -b-52)
 	awk -v pid=$pid -v name="$name" '
@@ -108,4 +117,7 @@ END {
 }
 ' $pid/smaps
 done|sort -n
-printf "$heading"
+
+if [ $verbose -gt 0 ]; then
+	printf "$heading"
+fi
