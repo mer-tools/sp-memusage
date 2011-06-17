@@ -949,8 +949,14 @@ app_data_add_cgroup(app_data_t* self, const char* name)
 		return -ENOMEM;
 	}
 
-	if (self->cgroups) self->cgroups->next = cgroup;
-	else self->cgroups = cgroup;
+	if (!self->cgroups) self->cgroups = cgroup;
+	else {
+		cgroup_data_t* last = self->cgroups;
+		while (last->next) {
+			last = last->next;
+		}
+		last->next = cgroup;
+	}
 	return 0;
 }
 
