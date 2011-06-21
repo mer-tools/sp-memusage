@@ -1,3 +1,7 @@
+sp-memusage (1.2.11), 21 Jun 2011:
+  * mem-smaps-totals: add support for Locked and Anonymous smaps fields.
+  * mem-cpu-monitor: add support for monitoring multiple cgroups.
+
 sp-memusage (1.2.10), 17 May 2011:
   * Fix mem-smaps-totals incorrect help output.
 

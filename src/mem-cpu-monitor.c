@@ -90,6 +90,7 @@ static bool 			do_print_report_default = true;
 
 static bool 			do_full_process_scan = false;
 
+
 // Flags should have values of powers of 2
 enum OPTION_VALUE_FLAGS {
 	OF_PROC_MEM_CHANGES_ONLY 	= 1,
@@ -165,7 +166,7 @@ usage()
 		"        %s\n"
 		"\n"
 		"   Monitor all bash shells with 2 second interval:\n"
-		"        %s -i 2 $(pidof bash)\n"
+		"        %s -i 2 $(pidof bash)\n"/* name of the monitored cgroup */
 		"\n"
 		"   Monitor PIDS 1234 and 5678 with default interval:\n"
 		"        %s -p 1234 -p 5678\n"
@@ -231,6 +232,20 @@ typedef struct proc_data_t {
 
 
 /**
+ * cgroups statistics gathering structure
+ */
+typedef struct cgroup_data_t {
+	sp_measure_sys_data_t data[2];
+	sp_measure_sys_data_t* data1;
+	sp_measure_sys_data_t* data2;
+
+	char* name;
+	const char* path;
+
+	struct cgroup_data_t* next;
+} cgroup_data_t;
+
+/**
  * Application data structure.
  *
  * Holds system snapshots, list of processes, root header and
@@ -262,13 +277,70 @@ typedef struct app_data_t {
 	// Bitmask holding a number of option flags
 	unsigned int option_flags;
 
-	/* cgroup root */
-	char* cgroup_root;
+	/* cgroup data */
+	cgroup_data_t* cgroups;
 } app_data_t;
 
 /* function declarations */
 static int proc_data_create_header(proc_data_t* proc, app_data_t* app_data, int index);
 
+
+/**
+ * Initializes cgroup monitoring data structure.
+ *
+ * @param[in] self   the cgroup data structure.
+ */
+static void cgroup_init(cgroup_data_t* self)
+{
+	sp_measure_init_sys_data(&self->data[0], SNAPSHOT_SYS_MEM_CGROUPS, NULL);
+	sp_measure_init_sys_data(&self->data[1], 0, &self->data[0]);
+	self->path = sp_measure_cgroup_select(&self->data[0], self->name);
+
+	self->data1 = &self->data[0];
+	self->data2 = &self->data[1];
+
+	/* read the initial data */
+	sp_measure_get_sys_data(self->data1, SNAPSHOT_SYS_MEM_CGROUPS, NULL);
+}
+
+/**
+ * Frees cgroup monitoring data structure.
+ *
+ * @param[in] self   the cgroup data structure.
+ */
+static void cgroup_free(cgroup_data_t* self)
+{
+	sp_measure_free_sys_data(&self->data[0]);
+	sp_measure_free_sys_data(&self->data[1]);
+	if (self->name) free(self->name);
+	free(self);
+}
+
+/**
+ * Reads cgroup memory usage data.
+ *
+ * @param[in] self   the cgroup data structure.
+ */
+static void cgroup_read(cgroup_data_t* self)
+{
+	sp_measure_get_sys_data(self->data2, SNAPSHOT_SYS_MEM_CGROUPS, NULL);
+}
+
+
+/**
+ * Swaps cgroup data references
+ *
+ * The data references are swapped before reading new usage
+ * data to have last snapshot for memory increment/decrement
+ * statistics.
+ * @param[in] self   the cgroup data structure.
+ */
+static void cgroup_swap(cgroup_data_t* self)
+{
+	sp_measure_sys_data_t* swap = self->data2;
+	self->data2 = self->data1;
+	self->data1 = swap;
+}
 /*
  * Writer functions used to output the system/process statistics.
  */
@@ -357,12 +429,12 @@ write_sys_mem_change(char* buffer, int size, void* args)
 int
 write_sys_mem_cgroup_used(char* buffer, int size, void* args)
 {
-	app_data_t* data = (app_data_t*)args;
-	if (FIELD_SYS_MEM_CGROUP(data->sys_data2) == ESPMEASURE_UNDEFINED) {
+	cgroup_data_t* data = (cgroup_data_t*)args;
+	if (FIELD_SYS_MEM_CGROUP(data->data2) == ESPMEASURE_UNDEFINED) {
 		strcpy(buffer, NO_DATA);
 		return sizeof(NO_DATA) - 1;
 	}
-	return snprintf(buffer, size + 1, "%8d", FIELD_SYS_MEM_CGROUP(data->sys_data2));	return 0;
+	return snprintf(buffer, size + 1, "%8d", FIELD_SYS_MEM_CGROUP(data->data2));	return 0;
 }
 
 /**
@@ -371,9 +443,9 @@ write_sys_mem_cgroup_used(char* buffer, int size, void* args)
 int
 write_sys_mem_cgroup_change(char* buffer, int size, void* args)
 {
-	app_data_t* data = (app_data_t*)args;
+	cgroup_data_t* data = (cgroup_data_t*)args;
 	int value;
-	if (sp_measure_diff_sys_mem_cgroup(data->sys_data1, data->sys_data2, &value) == 0) {
+	if (sp_measure_diff_sys_mem_cgroup(data->data1, data->data2, &value) == 0) {
 		return snprintf(buffer, size + 1, "%+6d", value);
 	}
 	strcpy(buffer, NO_DATA);
@@ -513,8 +585,11 @@ app_data_init_sys_snapshots(app_data_t* self)
 	CHECK_SNAPSHOT_RC(sp_measure_init_sys_data(&self->sys_data[1], 0, &self->sys_data[0]),
 			"system /proc/ data snapshot initialization returned (%x).", rc |= __rc);
 
-	if (self->resource_flags & SNAPSHOT_SYS_MEM_CGROUPS) {
-		sp_measure_cgroup_select(&self->sys_data[0], self->cgroup_root);
+	/* initialize cgroups */
+	cgroup_data_t* cgroup = self->cgroups;
+	while (cgroup) {
+		cgroup_init(cgroup);
+		cgroup = cgroup->next;
 	}
 
 	/* take initial system snapshot */
@@ -558,12 +633,16 @@ app_data_create_header(app_data_t* self)
 	if (sp_report_header_add_child(mem_header, "used:", 10, SP_REPORT_ALIGN_RIGHT, write_sys_mem_used, (void*)self) == NULL) return -ENOMEM;
 	if (sp_report_header_add_child(mem_header, "change:", 8, SP_REPORT_ALIGN_RIGHT, write_sys_mem_change, (void*)self) == NULL) return -ENOMEM;
 
-	/* cgroup header (if cgroups option was specified) */
-	if (self->resource_flags & SNAPSHOT_SYS_MEM_CGROUPS) {
-		sp_report_header_t* cgroup_header = sp_report_header_add_child(&self->root_header, "cgroup", 0, SP_REPORT_ALIGN_CENTER, NULL, NULL);
+	/* cgroups headers */
+	cgroup_data_t* cgroup = self->cgroups;
+	while (cgroup) {
+		char group_title[512];
+		snprintf(group_title, sizeof(group_title), "[%s]", strrchr(cgroup->path, '/') + 1);
+		sp_report_header_t* cgroup_header = sp_report_header_add_child(&self->root_header, group_title, 0, SP_REPORT_ALIGN_CENTER, NULL, NULL);
 		if (cgroup_header == NULL) return -ENOMEM;
-	    if (sp_report_header_add_child(cgroup_header, "used:", 10, SP_REPORT_ALIGN_RIGHT, write_sys_mem_cgroup_used, (void*)self) == NULL) return -ENOMEM;
-	    if (sp_report_header_add_child(cgroup_header, "change:", 8, SP_REPORT_ALIGN_RIGHT, write_sys_mem_cgroup_change, (void*)self) == NULL) return -ENOMEM;
+	    if (sp_report_header_add_child(cgroup_header, "used:", 10, SP_REPORT_ALIGN_RIGHT, write_sys_mem_cgroup_used, (void*)cgroup) == NULL) return -ENOMEM;
+	    if (sp_report_header_add_child(cgroup_header, "change:", 8, SP_REPORT_ALIGN_RIGHT, write_sys_mem_cgroup_change, (void*)cgroup) == NULL) return -ENOMEM;
+		cgroup = cgroup->next;
 	}
 
 	/* cpu header containing cpu usage and average frequency columns */
@@ -640,6 +719,16 @@ app_data_release(app_data_t* self)
 	for (i = 0; i < self->name_index; i++) {
 		free(self->name_list[i].name);
 	}
+
+	/* free cgroup data */
+	cgroup_data_t* cgroup = self->cgroups;
+	while (cgroup) {
+		cgroup_data_t* next = cgroup->next;
+		cgroup_free(cgroup);
+		cgroup = next;
+	}
+
+
 
 	return 0;
 }
@@ -843,6 +932,30 @@ app_data_remove_proc(app_data_t* self, int pid)
 			index ^= 1;
 			proc = proc->next;
 		}
+	}
+	return 0;
+}
+
+
+static int
+app_data_add_cgroup(app_data_t* self, const char* name)
+{
+	cgroup_data_t* cgroup = calloc(1, sizeof(cgroup_data_t));
+	if (!cgroup) return -ENOMEM;
+
+	cgroup->name = strdup(name);
+	if (!cgroup->name) {
+		free(cgroup);
+		return -ENOMEM;
+	}
+
+	if (!self->cgroups) self->cgroups = cgroup;
+	else {
+		cgroup_data_t* last = self->cgroups;
+		while (last->next) {
+			last = last->next;
+		}
+		last->next = cgroup;
 	}
 	return 0;
 }
@@ -1077,7 +1190,7 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 {
 	int opt;
 	char* output_path = NULL;
-	while ((opt = getopt_long(argc, argv, "p:hf:mcM:C:i:n:x:N:G", long_opts, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "p:hf:mcM:C:i:n:x:N:G:", long_opts, NULL)) != -1) {
 		/* getopt allows -<char><arg> which gives confusing results
 		 * when one writes --name foobar as -name.  Complain about it.
 		 */
@@ -1148,8 +1261,7 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 			}
 			break;
 		case 'G':
-			if (optarg) self->cgroup_root = strdup(optarg);
-		    self->resource_flags |= SNAPSHOT_SYS_MEM_CGROUPS;
+			app_data_add_cgroup(self, optarg);
 			break;
 		case 'F':
 			break;
@@ -1170,7 +1282,11 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 		output = stdout;
 	}
 	while (optind < argc) {
-		if (app_data_add_proc(self, atoi(argv[optind])) == NULL) {
+		int pid = atoi(argv[optind]);
+		if (!pid) {
+			fprintf(stderr, "WARNING: Failed to parse target process pid: %s\n", argv[optind]);
+		}
+		else if (app_data_add_proc(self, pid) == NULL) {
 			fprintf(stderr, "Error occurred during process %d monitoring initialization!\n",
 						atoi(argv[optind]));
 			exit(-1);
@@ -1307,6 +1423,14 @@ int main(int argc, char** argv)
 			}
 		}
 
+		/* take cgroups data snapshots */
+		cgroup_data_t* cgroup = app_data.cgroups;
+		while (cgroup) {
+			cgroup_read(cgroup);
+			cgroup = cgroup->next;
+		}
+
+
 		/* take process snapshots */
 		proc = app_data.proc_list;
 		while (proc) {
@@ -1392,6 +1516,13 @@ int main(int argc, char** argv)
 				proc_data_swap = proc->data1;
 				proc->data1 = proc->data2;
 				proc->data2 = proc_data_swap;
+			}
+
+			/* swap cgroups data snapshots */
+			cgroup_data_t* cgroup = app_data.cgroups;
+			while (cgroup) {
+				cgroup_swap(cgroup);
+				cgroup = cgroup->next;
 			}
 		}
 
