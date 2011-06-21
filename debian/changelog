@@ -1,3 +1,12 @@
+sp-memusage (1.2.11-1) unstable; urgency=low
+
+  * Fixes: NB#265662 - mem-cpu-monitor -G/--cgroup option argument is parsed
+    strangely
+  * Fixes: NB#256961 - mem-smaps-totals lacks support for Locked and Anonymous
+    smaps fields
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Tue, 21 Jun 2011 11:11:53 +0300
+
 sp-memusage (1.2.10-1) unstable; urgency=low
 
   * Fixes: NB#256242 - mem-smaps-totals: in-program synopsis is incorrect
