@@ -1,3 +1,6 @@
+sp-memusage (1.2.13), 30 Jun 2011:
+  * mem-cpu-monitor: fix process mem/cpu change monitoring flags (-c/-m).
+
 sp-memusage (1.2.12), 30 Jun 2011:
   * mem-cpu-monitor: change --cgroup option argument from optional to
     required.
