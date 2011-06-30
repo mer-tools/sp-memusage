@@ -1,3 +1,10 @@
+sp-memusage (1.2.12-1) unstable; urgency=low
+
+  * Fixes: NB#265662 - mem-cpu-monitor -G/--cgroup option argument is parsed
+    strangely
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 30 Jun 2011 09:44:44 +0300
+
 sp-memusage (1.2.11-1) unstable; urgency=low
 
   * Fixes: NB#265662 - mem-cpu-monitor -G/--cgroup option argument is parsed
