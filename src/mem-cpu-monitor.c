@@ -189,7 +189,7 @@ static const struct option long_opts[] = {
 	{"name", 1, 0, 'n'},
 	{"name-created", 1, 0, 'N'},
 	{"exec", 1, 0, 'x'},
-	{"cgroup", 2, 0, 'G'},
+	{"cgroup", 1, 0, 'G'},
 	{0,0,0,0}
 };
 
