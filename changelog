@@ -1,3 +1,7 @@
+sp-memusage (1.2.12), 30 Jun 2011:
+  * mem-cpu-monitor: change --cgroup option argument from optional to
+    required.
+
 sp-memusage (1.2.11), 21 Jun 2011:
   * mem-smaps-totals: add support for Locked and Anonymous smaps fields.
   * mem-cpu-monitor: add support for monitoring multiple cgroups.
