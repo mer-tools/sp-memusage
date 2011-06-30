@@ -1224,9 +1224,11 @@ parse_cmdline(int argc, char** argv, app_data_t* self)
 			break;
 		case 'm':
 			ADD_OPTION_VALUE_FLAG(self->option_flags, OF_PROC_MEM_CHANGES_ONLY);
+			do_print_report_default = false;
 			break;
 		case 'c':
 			ADD_OPTION_VALUE_FLAG(self->option_flags, OF_PROC_CPU_CHANGES_ONLY);
+			do_print_report_default = false;
 			break;
 		case 'M':
 			ADD_OPTION_VALUE_FLAG(self->option_flags, OF_SYS_MEM_CHANGES_ONLY);
@@ -1385,10 +1387,8 @@ int main(int argc, char** argv)
 
 	gettimeofday(&timestamp, NULL);
 
+	do_print_report = true;
 	while (!quit) {
-
-		do_print_report = do_print_report_default;
-
 		/* scan for processes to monitor */
 		if (app_data_scan_processes(&app_data) == 1) {
 			do_print_header = true;
@@ -1553,6 +1553,7 @@ int main(int argc, char** argv)
 				}
 			}
 		}
+		do_print_report = do_print_report_default;
 	}
 
 	while (app_data.proc_list) {
