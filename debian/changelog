@@ -1,3 +1,10 @@
+sp-memusage (1.2.13-1) unstable; urgency=low
+
+  * Fixes: NB#269750 - mem-cpu-monitor -m/--mem-change flag has no effect when
+    monitored process specified with -n
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Thu, 30 Jun 2011 12:10:52 +0300
+
 sp-memusage (1.2.12-1) unstable; urgency=low
 
   * Fixes: NB#265662 - mem-cpu-monitor -G/--cgroup option argument is parsed
