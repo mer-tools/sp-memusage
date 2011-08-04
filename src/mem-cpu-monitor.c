@@ -766,6 +766,7 @@ proc_data_create(proc_data_t** pproc, int pid, app_data_t* app_data)
 	proc_data_t* proc = *pproc;
 	if (proc == NULL) return -ENOMEM;
 
+	proc->header = NULL;
 	proc->next = NULL;
 	proc->app_data = app_data;
 	proc->resource_flags = SNAPSHOT_PROC;
