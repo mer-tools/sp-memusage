@@ -1,3 +1,9 @@
+sp-memusage (1.2.14-1) unstable; urgency=low
+
+  * NB#274337 - mem-cpu-monitor crashes after running for long time
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Fri, 05 Aug 2011 13:45:33 +0300
+
 sp-memusage (1.2.13-1) unstable; urgency=low
 
   * Fixes: NB#269750 - mem-cpu-monitor -m/--mem-change flag has no effect when
