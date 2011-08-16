@@ -1500,6 +1500,7 @@ int main(int argc, char** argv)
 				exit(-1);
 			}
 			do_print_header = false;
+			do_print_report = true;
 		}
 
 		/* print data */
