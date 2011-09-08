@@ -113,6 +113,7 @@ static bool colors = true;
 #define COLOR_LOWMARK  "\033[33m"
 #define COLOR_HIGHMARK "\033[31m"
 #define COLOR_PROCESS  "\033[32m"
+#define COLOR_CGROUP   "\033[32m"
 
 #define COLORIZE(prefix, text, postfix) 	(colors ? prefix text postfix : text)
 
@@ -130,6 +131,25 @@ static void quit_app(int sig) { (void)sig; if (quit++) _exit(1); }
 /* a mark to print for process data when process is not available */
 #define NO_DATA    "n/a"
 
+/**
+ * Structure for storing ANSI escape coded color highlighting.
+ */
+typedef struct {
+	char* set;
+	char* clear;
+} hlight_t;
+
+/* process column highlighting */
+static hlight_t hlight_proc[2] = {
+		{.set = NULL, .clear = NULL},
+		{.set = COLOR_PROCESS, .clear = COLOR_CLEAR},
+};
+
+/* cgroup column highlighting */
+static hlight_t hlight_cgroup[2] = {
+		{.set = NULL, .clear = NULL},
+		{.set = COLOR_CGROUP, .clear = COLOR_CLEAR},
+};
 
 
 
@@ -635,11 +655,16 @@ app_data_create_header(app_data_t* self)
 
 	/* cgroups headers */
 	cgroup_data_t* cgroup = self->cgroups;
+	int index = 1;
 	while (cgroup) {
 		char group_title[512];
 		snprintf(group_title, sizeof(group_title), "[%s]", strrchr(cgroup->path, '/') + 1);
 		sp_report_header_t* cgroup_header = sp_report_header_add_child(&self->root_header, group_title, 0, SP_REPORT_ALIGN_CENTER, NULL, NULL);
 		if (cgroup_header == NULL) return -ENOMEM;
+		if (colors) {
+			hlight_t* hlight = &hlight_cgroup[(index++) & 1];
+			sp_report_header_set_color(cgroup_header, hlight->set, hlight->clear);
+		}
 	    if (sp_report_header_add_child(cgroup_header, "used:", 10, SP_REPORT_ALIGN_RIGHT, write_sys_mem_cgroup_used, (void*)cgroup) == NULL) return -ENOMEM;
 	    if (sp_report_header_add_child(cgroup_header, "change:", 8, SP_REPORT_ALIGN_RIGHT, write_sys_mem_cgroup_change, (void*)cgroup) == NULL) return -ENOMEM;
 		cgroup = cgroup->next;
@@ -654,7 +679,7 @@ app_data_create_header(app_data_t* self)
 
 	/* create headers for monitored processes */
 	proc_data_t* proc = self->proc_list;
-	int index = 0;
+	index = 0;
 	while (proc) {
 		proc_data_create_header(proc, self, index++);
 		proc = proc->next;
@@ -926,10 +951,11 @@ app_data_remove_proc(app_data_t* self, int pid)
 	}
 	/* reset color ordering which could get broken with column removal */
 	if (colors) {
-		int index = 1;
+		int index = 0;
 		proc_data_t* proc = self->proc_list;
 		while (proc) {
-			sp_report_header_set_color(proc->header, index ? COLOR_PROCESS : NULL, index ? COLOR_CLEAR : NULL);
+			hlight_t* hlight = &hlight_proc[(index++) & 1];
+			sp_report_header_set_color(proc->header, hlight->set, hlight->clear);
 			index ^= 1;
 			proc = proc->next;
 		}
