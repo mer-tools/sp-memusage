@@ -1,3 +1,10 @@
+sp-memusage (1.2.15-1) unstable; urgency=low
+
+  * Fixes: NB#280262 - mem-cpu-monitor: alternating column colors not used for
+    cgroups
+
+ -- Tommi Rantala <ext-tommi.1.rantala@nokia.com>  Fri, 09 Sep 2011 09:01:23 +0300
+
 sp-memusage (1.2.14-1) unstable; urgency=low
 
   * NB#274337 - mem-cpu-monitor crashes after running for long time
