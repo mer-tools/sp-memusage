@@ -1,3 +1,6 @@
+sp-memusage (1.2.15), 9 Sep 2011:
+  * mem-cpu-monitor: apply column coloring also to cgroups.
+
 sp-memusage (1.2.14), 5 Aug 2011:
   * mem-cpu-monitor: fix potential use of uninitialized data.
 
