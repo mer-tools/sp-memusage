@@ -1,5 +1,7 @@
+%define _defaultdocdir %{_datadir}/doc
+
 Name: sp-memusage	
-Version: 1.2.3
+Version: 1.2.15
 Release: 1%{?dist}
 Summary:  memory usage reporting tools
 Group: Development/Tools
@@ -36,9 +38,10 @@ make install DESTDIR=%{buildroot}
 rm -rf %{buildroot}
 
 %files
-%defattr(-,root,root,-)
-%{_libdir}/*
+%defattr(755,root,root,-)
 %{_bindir}/*
+%defattr(644,root,root,-)
+%{_libdir}/*
 %{_mandir}/man1/*
 %doc COPYING README
 
@@ -50,7 +53,7 @@ Group: Development/Tools
 CI tests for sp-memusage
 
 %files tests
-%defattr(-,root,root,-)
+%defattr(755,root,root,-)
 %{_datadir}/%{name}-tests/*
 
 
