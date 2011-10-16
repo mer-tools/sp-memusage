@@ -1,5 +1,3 @@
-%define _defaultdocdir %{_datadir}/doc
-
 Name: sp-memusage	
 Version: 1.2.15
 Release: 1%{?dist}
