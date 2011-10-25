@@ -1,12 +1,12 @@
-Name: sp-memusage	
+Name: sp-memusage
 Version: 1.2.15
 Release: 1%{?dist}
 Summary:  memory usage reporting tools
 Group: Development/Tools
-License: LGPLv2+	
-URL: http://www.gitorious.org/+maemo-tools-developers/maemo-tools/sp-memusage	
+License: LGPLv2+
+URL: http://www.gitorious.org/+maemo-tools-developers/maemo-tools/sp-memusage
 Source: %{name}_%{version}.tar.gz
-BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: libsp-measure-devel
 
 %description
@@ -26,7 +26,7 @@ BuildRequires: libsp-measure-devel
 %setup -q -n sp-memusage
 
 %build
-make 
+make
 
 %install
 rm -rf %{buildroot}
