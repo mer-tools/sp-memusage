@@ -1,0 +1,38 @@
+.TH MEM-CPU-PLOT 1 "2011-11-01" "sp-memusage"
+.SH NAME
+mem-cpu-plot - build memory and cpu usage graphs from mem-cpu-monitor output.
+.SH SYNOPSIS
+mem-cpu-plot [-i <input filename>] [-o <output filename>]
+.SH DESCRIPTION
+\fImem-cpu-plot\fP parses mem-cpu-monitor output and builds memory and cpu 
+usage graphs for system and monitored processes. \fImem-cpu-plot\fP accepts
+both - color and no-color mem-cpu-monitor output.
+.SH OPTIONS
+
+.TP
+\fI--out\fP=<path> (\fI-o\fP <path)
+Specifies the output file name. Standard output is used by default.
+
+.TP
+\fI--input-file\fP=<path> (\fI-i\fP <path>)
+Specifies the input file name. Standard input is used by default.
+
+.TP 
+ \fI--help\fP (\fI-h\fP)
+Displays help information and exits.
+
+.SH EXAMPLES
+.TP
+mem-cpu-monitor -i 1 -p <somepid> | mem-cpu-plot > plot.svg
+
+After stopping monitoring with ctrl+C mem-cpu-plot a plot.svg
+file will be created containing system and process <somepid>
+memory and cpu usage.
+.SH SEE ALSO
+.IR mem-cpu-monitor (1)
+.SH COPYRIGHT
+Copyright (C) 2011 Nokia Corporation.
+.PP
+This is free software.  You may redistribute copies of it under the
+terms of the GNU General Public License v2 included with the software.
+There is NO WARRANTY, to the extent permitted by law.
