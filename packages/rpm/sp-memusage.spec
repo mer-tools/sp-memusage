@@ -37,11 +37,25 @@ rm -rf %{buildroot}
 
 %files
 %defattr(755,root,root,-)
-%{_bindir}/*
+%{_bindir}/mem-monitor
+%{_bindir}/mem-cpu-monitor
+%{_bindir}/mem-monitor-smaps 
+%{_bindir}/mem-smaps-*
+%{_bindir}/mem-dirty-code-pages
+%{_bindir}/run-with-mallinfo
+%{_bindir}/run-with-memusage
 %defattr(644,root,root,-)
 %{_libdir}/*
-%{_mandir}/man1/*
+%{_mandir}/man1/mem-cpu-monitor.1.gz
+%{_mandir}/man1/mem-dirty-code-pages.1.gz
+%{_mandir}/man1/mem-monitor.1.gz
+%{_mandir}/man1/mem-smaps-totals.1.gz
+%{_mandir}/man1/run-with-memusage.1.gz
+%{_mandir}/man1/mem-monitor-smaps.1.gz
+%{_mandir}/man1/mem-smaps-private.1.gz
+%{_mandir}/man1/run-with-mallinfo.1.gz
 %doc COPYING README
+
 
 %package tests
 Summary: CI tests for sp-memusage
@@ -54,4 +68,19 @@ CI tests for sp-memusage
 %defattr(755,root,root,-)
 %{_datadir}/%{name}-tests/*
 
+%package visualize
+Summary: Visualizing sp-memusage output
+Group: Development/Tools
+BuildArch: noarch
+
+%description visualize
+ Visualization scripts to parse sp-memusage tools output and generate
+ graphs for memory/cpu usage.
+
+%files visualize
+%defattr(755,root,root,-)
+%{_bindir}/mem-cpu-plot
+%defattr(644,root,root,-)
+%{_mandir}/man1/mem-cpu-plot.1.gz
+%doc COPYING README
 
