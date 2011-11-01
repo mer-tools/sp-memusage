@@ -38,3 +38,10 @@ XB-Maemo-CI-Packages: sp-memusage
 XB-Maemo-CI-Stage: fast, staging, acceptance
 Description: CI tests for sp-memusage
  CI tests for sp-memusage
+
+Package: sp-memusage-visualize
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, sp-memusage, python, graphviz, gnuplot-nox, xdg-utils
+Description: Visualization utilities for sp-memusage tool output.
+ This package contains visualization utilities for various sp-memusage tools
+ (mem-cpu-monitor) output.
