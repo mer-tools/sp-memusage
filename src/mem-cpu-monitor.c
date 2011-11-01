@@ -1389,7 +1389,8 @@ int main(int argc, char** argv)
 
 	is_atty = isatty(fileno(output));
 	if (!is_atty) colors = false;
-	fprintf(output, "System total memory: %u kB RAM, %u kB swap\n",
+	fprintf(output, "System: CPU: %u MHz max, total memory: %u kB RAM, %u kB swap\n",
+			FIELD_SYS_CPU_MAX_FREQ(app_data.sys_data1) / 1000,
 			FIELD_SYS_MEM_TOTAL(app_data.sys_data1), FIELD_SYS_MEM_SWAP(app_data.sys_data1));
 
 	// Disable header reprinting if we're printing to console, or if the

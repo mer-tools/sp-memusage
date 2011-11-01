@@ -8,6 +8,8 @@ Contents:
 4. mem-dirty-code-pages
 5. mallinfo
 6. run-with-memusage
+7. mem-cpu-monitor
+8. mem-cpu-plot
 
 This package contains several small utilities for reporting and
 monitoring process memory usage from the system point of view.
@@ -95,3 +97,21 @@ care about preloading differences between Scratchbox and other environments),
 but wraps libmemusage library instead.  When run with this script,
 statistics about application memory allocations will be displayed when
 the application exits.
+
+7. mem-cpu-monitor
+
+mem-cpu-monitor outputs (one-liner) system and process memory, CPU usage and
+frequency information at intervals defined by -i option (three seconds by
+default).
+
+The processes to be monitored are specified by their process ID numbers (PIDs).
+Any number of PIDs may be specified. For processes their clean, dirty memory,
+dirty memory change and CPU usage is monitored.
+
+Monitoring is continued until explicitly interrupted, for example by issuing
+SIGTERM via Ctrl-C.
+
+8. mem-cpu-plot
+
+Visualize mem-cpu-monitor output by creating memory and CPU usage graphs with
+gnuplot.
