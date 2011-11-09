@@ -4,7 +4,13 @@ mem-monitor-smaps - output process (or system) memory usage at given intervals
 .SH SYNOPSIS
 mem-monitor-smaps [\fI-c\fP] [\fI-i <interval>\fP] [\fI-p <process>\fP]
 .SH DESCRIPTION
-\fImem-monitor-smaps\fP outputs (one-liner) process or system memory usage information from /proc/meminfo at given intervals. If the monitored process exits during monitoring, the mem-monitor-smaps will also exit.
+\fImem-monitor-smaps\fP script outputs (one-liner) process or system
+memory usage information from /proc/meminfo at given intervals. If the
+monitored process exits during monitoring, the mem-monitor-smaps will
+also exit.
+.PP
+This is obsoleted by \fImem-cpu-monitor\fP binary, but may still be
+useful if one wants just a simple architecture independent script.
 .SH OPTIONS
 .IP -c
 Only changed lines will be shown. Helps to cut down the amount of uninteresting output if the memory usage of process changes only occasionally.
@@ -14,29 +20,22 @@ The interval between memory usage information updates. By default the interval i
 The process ID (or name) which the tool should monitor. If this is omitted, the whole system memory usage is monitored instead. If process name is given and multiple PIDs match it, the latest one will be monitored.
 .SH EXAMPLE OUTPUT
 Example \fImem-monitor-smaps\fP output (invoked with mem-monitor-smaps -p esd):
-.br
+.nf
 
-.br 
 List available system memory and given process memory usage
-.br
 for /usr/bin/esd[944] according to SMAPS.
-.br
 (without swap as SMAPS doesn't report swap correctly)
-.br
  
-.br
             system  process         private /\-\-\-\-\-\- dirty \-\-\-\-\-\-\-\-\-\\
-.br
 time:       avail:  size:   rss:    clean:  shared: private: change:
-.br
 16:47:32    68260   2168    708     44      0       184        +0 kB
-.br
 16:47:34    68284   2168    708     44      0       184        +0 kB
-.br
 16:47:37    68292   2168    708     44      0       184        +0 kB
+.fi
 .SH SEE ALSO
 .IR proc (1), 
 .IR memusage (1)
+.IR mem-cpu-monitor (1)
 .SH COPYRIGHT
 Copyright (C) 2008 Nokia Corporation.
 .PP
