@@ -6,7 +6,7 @@ Group: Development/Tools
 License: LGPLv2+
 URL: http://www.gitorious.org/+maemo-tools-developers/maemo-tools/sp-memusage
 Source: %{name}_%{version}.tar.gz
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-build
 BuildRequires: libsp-measure-devel
 
 %description
