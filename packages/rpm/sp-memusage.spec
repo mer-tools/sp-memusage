@@ -7,7 +7,7 @@ License: LGPLv2+
 URL: http://www.gitorious.org/+maemo-tools-developers/maemo-tools/sp-memusage
 Source: %{name}_%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-build
-BuildRequires: libsp-measure-devel
+BuildRequires: libsp-measure-devel, python
 
 %description
   This package provides a collection of memory usage monitoring tools and scripts.
@@ -39,7 +39,7 @@ rm -rf %{buildroot}
 %defattr(755,root,root,-)
 %{_bindir}/mem-monitor
 %{_bindir}/mem-cpu-monitor
-%{_bindir}/mem-monitor-smaps 
+%{_bindir}/mem-monitor-smaps
 %{_bindir}/mem-smaps-*
 %{_bindir}/mem-dirty-code-pages
 %{_bindir}/run-with-mallinfo
