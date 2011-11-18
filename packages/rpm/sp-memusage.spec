@@ -36,7 +36,7 @@ make install DESTDIR=%{buildroot}
 rm -rf %{buildroot}
 
 %files
-%defattr(755,root,root,-)
+%defattr(-,root,root,-)
 %{_bindir}/mem-monitor
 %{_bindir}/mem-cpu-monitor
 %{_bindir}/mem-monitor-smaps
@@ -44,8 +44,7 @@ rm -rf %{buildroot}
 %{_bindir}/mem-dirty-code-pages
 %{_bindir}/run-with-mallinfo
 %{_bindir}/run-with-memusage
-%defattr(644,root,root,-)
-%{_libdir}/*
+%{_libdir}/mallinfo*
 %{_mandir}/man1/mem-cpu-monitor.1.gz
 %{_mandir}/man1/mem-dirty-code-pages.1.gz
 %{_mandir}/man1/mem-monitor.1.gz
@@ -65,7 +64,7 @@ Group: Development/Tools
 CI tests for sp-memusage
 
 %files tests
-%defattr(755,root,root,-)
+%defattr(-,root,root,-)
 %{_datadir}/%{name}-tests/*
 
 %package visualize
@@ -78,9 +77,8 @@ BuildArch: noarch
  graphs for memory/cpu usage.
 
 %files visualize
-%defattr(755,root,root,-)
+%defattr(-,root,root,-)
 %{_bindir}/mem-cpu-plot
-%defattr(644,root,root,-)
 %{_mandir}/man1/mem-cpu-plot.1.gz
 %doc COPYING README
 
