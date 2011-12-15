@@ -162,7 +162,7 @@ class Parser:
 		instead of current one.
 		"""
 		if self.data.maxCpu > 0:
-			perc = perc * freq / seld.data.maxCpu
+			perc = perc * freq / self.data.maxCpu
 		return perc
 
 
