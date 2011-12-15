@@ -23,7 +23,9 @@ Displays help information and exits.
 
 .SH EXAMPLES
 .TP
-mem-cpu-monitor -i 1 -p <somepid> | mem-cpu-plot > plot.svg
+mem-cpu-monitor -i 1 -p <somepid> > memcpu.log
+^C
+cat memcpu.log | mem-cpu-plot > plot.svg
 
 After stopping monitoring with ctrl+C mem-cpu-plot a plot.svg
 file will be created containing system and process <somepid>

@@ -156,6 +156,16 @@ class Parser:
 		"""
 	
 	
+	def adjustCpuFreq(self, perc, freq):
+		"""
+		Adjust cpu frequency to be percentange of maximu cpu frequency
+		instead of current one.
+		"""
+		if self.data.maxCpu > 0:
+			perc = perc * freq / seld.data.maxCpu
+		return perc
+
+
 	def readSystemData(self):
 		"""
 		Reads system data (RAM and swap memory size and maximum CPU frequency:"
@@ -220,14 +230,14 @@ class Parser:
 					raise RuntimeError("Failed to parse timestamp value: %s") % rawTimestamp
 				values = []
 				values.append(int(rawMemoryUsage))
-				values.append(float(rawCpuUsage) * int(rawCpuFreq) / self.data.maxCpu)
+				values.append(self.adjustCpuFreq(float(rawCpuUsage), int(rawCpuFreq)))
 				
 				# parse the process data
 				while True:
 					match = self.reProcess.match(processText)
 					if match:
 						values.append(int(match.group(3)))
-						values.append(float(match.group(4)) * int(rawCpuFreq) / self.data.maxCpu)
+						values.append(self.adjustCpuFreq(float(match.group(4)), int(rawCpuFreq)))
 						processText = processText[match.end():]
 					else:
 						break
