@@ -22,14 +22,17 @@ Specifies the input file name. Standard input is used by default.
 Displays help information and exits.
 
 .SH EXAMPLES
-.TP
-mem-cpu-monitor -i 1 -p <somepid> > memcpu.log
-^C
-cat memcpu.log | mem-cpu-plot > plot.svg
 
-After stopping monitoring with ctrl+C mem-cpu-plot a plot.svg
-file will be created containing system and process <somepid>
-memory and cpu usage.
+mem-cpu-monitor -i 1 <-p PID|-n process-name>  >  memcpu.log
+.br
+^C
+.br
+mem-cpu-plot < memcpu.log > plot.svg
+
+After stopping monitoring with ctrl+C, mem-cpu-plot creates
+plot.svg SVG file containing the memory and cpu usage of
+the whole system and given processes.
+.
 .SH SEE ALSO
 .IR mem-cpu-monitor (1)
 .SH COPYRIGHT
