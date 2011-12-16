@@ -229,14 +229,14 @@ class Parser:
 				else:
 					raise RuntimeError("Failed to parse timestamp value: %s") % rawTimestamp
 				values = []
-				values.append(int(rawMemoryUsage))
+				values.append(int(rawMemoryUsage) * 1024)
 				values.append(self.adjustCpuFreq(float(rawCpuUsage), int(rawCpuFreq)))
 				
 				# parse the process data
 				while True:
 					match = self.reProcess.match(processText)
 					if match:
-						values.append(int(match.group(3)))
+						values.append(int(match.group(3)) * 1024)
 						values.append(self.adjustCpuFreq(float(match.group(4)), int(rawCpuFreq)))
 						processText = processText[match.end():]
 					else:
@@ -478,7 +478,7 @@ class Plotter:
 		
 		self.setHeader()
 		self.setAxisX("Time (s)", data.time[0], data.time[-1])
-		self.setAxisY("Memory", 0, data.topMemory * 1.1, "%.1s%c")
+		self.setAxisY("Used system / dirty process memory", 0, data.topMemory * 1.1, "%.1s%c")
 		self.setAxisY2("CPU %", 0, data.topCpu * 1.1)
 		self.setPlot()
 		
