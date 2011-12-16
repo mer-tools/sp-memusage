@@ -20,41 +20,50 @@
 
 import sys, string, re, os, getopt, subprocess, operator
 
-
 class Options:
 	"""
 	This class contains options parser implementation.
 	"""
+	REPORT_RESOURCE = 1
+	REPORT_PROCESS = 2
+
 	fileIn = None
 	fileOut = None
+	reportType = REPORT_PROCESS | REPORT_RESOURCE
 
 	def parse(argv):
 		"Parses the command line arguments and initializes options."
 		try:
-			opts, args = getopt.gnu_getopt(argv, "i:o:h", 
+			opts, args = getopt.gnu_getopt(argv, "i:o:hrp",
 										["in=", 
 										 "out=",
-										 "help"])
+										 "help",
+										 "resource",
+										 "process"])
 		except getopt.GetoptError, err:
 			print >> sys.stderr, str(err) 
 			Options.displayUsage()
 			sys.exit(2)
-		
+
 		for opt, val in opts:
 			if opt == "-i" or opt == "--in":
 				Options.fileIn = val
 				continue
-				
-			if opt == "-o" or opt == "--out":
-				Options.fileOut = val
+
+			if opt == "-r" or opt == "--resource":
+				Options.type = self.REPORT_RESOURCE
 				continue
-			
+
+			if opt == "-p" or opt == "--process":
+				Options.type = self.REPORT_PROCESS
+				continue
+
 			if opt == "-h" or opt == "--help":
 				Options.displayUsage()
 				sys.exit(0)
-				
+
 		return
-				
+
 
 	def displayUsage():
 		print \
@@ -62,9 +71,11 @@ class Options:
 Usage:
   mem-cpu-plot <options>
   Where <options> are:
-	-i <file>  input file.
-	-o <file>  output file.
-	-h         this help page.
+    -i <file>  input file.
+    -o <file>  output file.
+    -r         create only resource reports.
+    -p         create only process reports.
+    -h         this help page.
 """
 
 	# static method definitions
@@ -77,16 +88,22 @@ class Unit:
 	This class contains parsed data of single unit - either system
 	or process.
 	"""
-	
+
+	# unit index
+	index = 0
+
 	# the unit name
 	name = None
 	
-	def __init__(self, name):
+	def __init__(self, name, pid):
 		"""
 		"""
 		self.name = name
+		self.pid = pid
 		self.memUsage = []
 		self.cpuUsage = []
+		self.index = Unit.index
+		Unit.index += 1
 
 		
 	def appendUsageData(self, mem, cpu):
@@ -106,27 +123,17 @@ class Data:
 	# Total system memory (kB)
 	maxMemory = None
 	
-	# the largest cpu usage in the data set
-	topCpu = 0
-	
-	# the largest memory usage in the data set
-	topMemory = 0
-	
 	def __init__(self):
 		self.units = []
 		self.time = []
 		
-		self.units.append(Unit("System"))
+		self.units.append(Unit("System", 0))
 		
 	def addPlotData(self, timestamp, values):
 		"Adds unit resource usage data at the specified timestamp"
 		self.time.append(timestamp)
 		index = 0
 		for unit in self.units:
-			if values[index] > self.topMemory:
-				self.topMemory = values[index]
-			if values[index + 1] > self.topCpu:
-				self.topCpu = values[index + 1]
 			unit.appendUsageData(values[index], values[index + 1])
 			index += 2
 			
@@ -193,7 +200,7 @@ class Parser:
 					match = self.reHeaderProcess.match(header)
 					if match:
 						header = header[match.end():]
-						self.data.units.append(Unit("%s(%s)" % (match.group(2).rstrip(), match.group(1))))
+						self.data.units.append(Unit(match.group(2).rstrip(), int(match.group(1))))
 					else:
 						break
 				return 
@@ -356,25 +363,31 @@ class Plotter:
 	"""
 	Creates gnuplot configuration/data files and invokes gnuplot to create
 	the graphs.
-	"""	
+	"""
 	DataFilename = "mem-cpu-usage.dat"
 	ConfigFilename = "mem-cpu-usage.cfg"
-	
-	def __init__(self, title):
+
+	PLOT_MEMORY = 1
+	PLOT_CPU = 2
+	PLOT_ALL = PLOT_MEMORY | PLOT_CPU
+
+	def __init__(self, title, id, type):
 		"""
 		"""
 		self.title = title
-		
-		
-	def createDataFile(self, name, data):
+		self.id = id
+		self.type = type
+
+
+	def createDataFile(data):
 		"""
 		Create gnuplot data file:
 		  <timestamp> <system mem> <system cpu> <proc1 mem> <proc1 cpu> <proc2 mem> <proc2 cpu> ...
 		  ...
 		"""
-		file = open(name, "w")
+		file = open(Plotter.DataFilename, "w")
 		if file is None:
-			raise RuntimeError("Failed to create data file: %s" % name)
+			raise RuntimeError("Failed to create data file: %s" % Plotter.DataFilename)
 		index = 0
 		for timestamp in data.time:
 			file.write("%d" % timestamp)
@@ -384,13 +397,16 @@ class Plotter:
 			file.write("\n")
 		file.close()
 		
-		
-	def removeFile(self, name):
-		"Removes the specified file."
-		if os.path.isfile(name):
-			os.remove(name)
-		
-		
+	createDataFile = staticmethod(createDataFile)
+
+
+	def removeDataFile():
+		if os.path.isfile(Plotter.DataFilename):
+			os.remove(Plotter.DataFilename)
+
+	removeDataFile = staticmethod(removeDataFile)
+
+
 	def setAxisY(self, label, min, max, format = None):
 		"Sets Y axis range (min-max) and formatting."
 		if min == max:
@@ -456,73 +472,122 @@ class Plotter:
 		self.cfg.write("set style data lines\n")
 		self.cfg.write("set key bmargin\n")
 		
-	def setPlot(self):
+	def setPlot(self, units):
 		"Sets the graphs for system and process resource usage."
-		self.cfg.write("plot \\\n")
-		index = 2
-		for unit in data.units:
-			if index > 2:
-				self.cfg.write("\\\n\t,")
-			else:
-				self.cfg.write("\t")
-			self.cfg.write("\"%s\" using 1:%d title \"%s(memory)\" axes x1y1 \\\n" % (self.DataFilename, index, unit.name))
-			self.cfg.write("\t,\"%s\" using 1:%d title \"%s(cpu)\" axes x1y2" % (self.DataFilename, index + 1, unit.name))
-			index += 2
+		if self.type & self.PLOT_MEMORY:
+			cpuAxis = "x1y2"
+		else:
+			cpuAxis = "x1y1"
+
+		memoryLabel = ""
+		cpuLabel = ""
+		if self.type == self.PLOT_ALL:
+			memoryLabel = "(memory)"
+			cpuLabel= "(cpu)"
+
+		self.cfg.write("plot ")
+		separator = "\t"
+		for unit in units:
+			self.cfg.write("\\\n")
+			label = "%s[%s]" % (unit.name, unit.pid)
+			if self.type & self.PLOT_MEMORY:
+				self.cfg.write("%s\"%s\" using 1:%d title \"%s%s\" axes x1y1 \\\n" %
+							 (separator, self.DataFilename, unit.index * 2 + 2, label, memoryLabel))
+				separator = "\t,"
+			if self.type & self.PLOT_CPU:
+				self.cfg.write("%s\"%s\" using 1:%d title \"%s%s\" axes %s \\\n" % 
+							(separator, self.DataFilename, unit.index * 2 + 3, label, cpuLabel, cpuAxis))
+				separator = "\t,"
 		self.cfg.write("\n")
 
-	def createConfigFile(self, name, data):
+	def createConfigFile(self, name, data, units):
 		"Creates gnuplot configuration file."
 		self.cfg = open(name, "w")
 		if self.cfg is None:
 			raise RuntimeError("Failed to create data file: %s" % name)
 		
+		topMemory = bottomMemory = units[0].memUsage[0]
+		topCpu = bottomCpu = units[0].cpuUsage[0]
+		for unit in units:
+			for value in unit.memUsage:
+				if value < bottomMemory:
+					bottomMemory = value
+				if value > topMemory:
+					topMemory = value
+			for value in unit.cpuUsage:
+				if value < bottomCpu:
+					bottomCpu = value
+				if value > topCpu:
+					topCpu = value
+
 		self.setHeader()
 		self.setAxisX("Time (s)", data.time[0], data.time[-1])
-		self.setAxisY("Used system / dirty process memory", 0, data.topMemory * 1.1, "%.1s%c")
-		self.setAxisY2("CPU %", 0, data.topCpu * 1.1)
-		self.setPlot()
+		if self.type & self.PLOT_MEMORY:
+			self.setAxisY("Used system / dirty process memory", bottomMemory * 0.9, topMemory * 1.1, "%.1s%c")
+			if self.type & self.PLOT_CPU:
+				self.setAxisY2("CPU %", bottomCpu * 0.9, topCpu * 1.1)
+		else:
+			if self.type & self.PLOT_CPU:
+				self.setAxisY("CPU %", bottomCpu * 0.9, topCpu * 1.1)
+
+		self.setPlot(units)
 		
 		self.cfg.close()
 		
 	def cleanup(self):
 		"Removes gnuplot configuration and data files."
-		self.removeFile(self.DataFilename)
-		self.removeFile(self.ConfigFilename)
+		if os.path.isfile(self.ConfigFilename):
+			os.remove(self.ConfigFilename)
 		
-	def plot(self, data):
+	def plot(self, data, units = None):
 		"Plot the resource usage graphs from the specified data"
-		# prepare configuration and data files
-		self.createConfigFile(self.ConfigFilename, data)
-		self.createDataFile(self.DataFilename, data)
 		
+		self.createConfigFile(self.ConfigFilename, data, units or data.units)
 		# Convert with gnuplot
 		try:
-			file = None
-			if Options.fileOut:
-				file = open(Options.fileOut, "w")
-				if file is None:
-					raise RuntimeError("Failed to create output file: %s" % Options.fileOut)
+			filename = "mem-cpu-plot-%s.svg" % self.id
+			file = open(filename, "w")
+			if file is None:
+				raise RuntimeError("Failed to create output file: %s" % filename)
 			
-			gnuplot = subprocess.Popen(["gnuplot", self.ConfigFilename], 0, None, None, file or sys.stdout)
+			gnuplot = subprocess.Popen(["gnuplot", self.ConfigFilename], 0, None, None, file)
 			gnuplot.wait()
-			if file:
-				file.close()
+			file.close()
+
 		except OSError, e:
 			print >> sys.stderr, "ERROR: failed to execute gnuplot (%s)" % e.strerror
 			print >> sys.stderr, "Check if the gnuplot is installed and try again."
 			self.cleanup()
 			sys.exit(2)
-				
-		# remove demporary data files
+
 		self.cleanup()
-		 
+
+
 
 # main
 
 Options.parse(sys.argv[1:])
 parser = Parser()
 data = parser.read(Options.fileIn)
-plotter = Plotter("Memory and CPU usage graph")
-plotter.plot(data)
+
+Plotter.createDataFile(data)
+
+if Options.reportType & Options.REPORT_RESOURCE:
+	plotter = Plotter("Memory usage graph", "memory", Plotter.PLOT_MEMORY)
+	plotter.plot(data)
+	plotter = Plotter("CPU usage graph", "cpu", Plotter.PLOT_CPU)
+	plotter.plot(data)
+
+if Options.reportType & Options.REPORT_PROCESS:
+	for unit in data.units:
+		units = [unit]
+		if unit.pid == 0:
+			id = "system"
+		else:
+			id = unit.pid
+		plotter = Plotter("%s memory and CPU usage graph" % unit.name, id, Plotter.PLOT_ALL)
+		plotter.plot(data, units)
+
+Plotter.removeDataFile()
 
 

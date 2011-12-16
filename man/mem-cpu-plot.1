@@ -7,15 +7,24 @@ mem-cpu-plot [-i <input filename>] [-o <output filename>]
 \fImem-cpu-plot\fP parses mem-cpu-monitor output and builds memory and cpu 
 usage graphs for system and monitored processes. \fImem-cpu-plot\fP accepts
 both - color and no-color mem-cpu-monitor output.
-.SH OPTIONS
 
-.TP
-\fI--out\fP=<path> (\fI-o\fP <path)
-Specifies the output file name. Standard output is used by default.
+By default it creates both - process and resource based reports (see --process
+and --resource options).
+
+.SH OPTIONS
 
 .TP
 \fI--input-file\fP=<path> (\fI-i\fP <path>)
 Specifies the input file name. Standard input is used by default.
+
+.TP
+\fI--process\fP (\fI-p\fP)
+Creates one memory & cpu usage report for every process.
+
+.TP
+\fI--resource\fP (\fI-r\fP)
+Creates single memory usage report and single cpu usage report for 
+all processes.
 
 .TP 
  \fI--help\fP (\fI-h\fP)
