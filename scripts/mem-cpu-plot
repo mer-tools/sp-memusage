@@ -29,6 +29,7 @@ class Options:
 
 	fileIn = None
 	fileOut = None
+	dirOut = "./"
 	reportType = REPORT_PROCESS | REPORT_RESOURCE
 
 	def parse(argv):
@@ -57,6 +58,10 @@ class Options:
 			if opt == "-p" or opt == "--process":
 				Options.type = self.REPORT_PROCESS
 				continue
+			
+			if opt == "-o" or opt == "--out":
+				Options.dirOut = val
+				continue
 
 			if opt == "-h" or opt == "--help":
 				Options.displayUsage()
@@ -71,8 +76,8 @@ class Options:
 Usage:
   mem-cpu-plot <options>
   Where <options> are:
-    -i <file>  input file.
-    -o <file>  output file.
+    -i <path>  input file. Standard input is used by default.
+    -o <path>  output directory. Current directory is used by default.
     -r         create only resource reports.
     -p         create only process reports.
     -h         this help page.
@@ -364,8 +369,9 @@ class Plotter:
 	Creates gnuplot configuration/data files and invokes gnuplot to create
 	the graphs.
 	"""
-	DataFilename = "mem-cpu-usage.dat"
-	ConfigFilename = "mem-cpu-usage.cfg"
+
+	DATA_FILE = "mem-cpu-usage.dat"
+	CONFIG_FILE = "mem-cpu-usage.cfg"
 
 	PLOT_MEMORY = 1
 	PLOT_CPU = 2
@@ -378,6 +384,8 @@ class Plotter:
 		self.id = id
 		self.type = type
 
+		self.DataFilename = Options.dirOut + "/" + Plotter.DATA_FILE
+		self.ConfigFilename = Options.dirOut + "/" + Plotter.CONFIG_FILE
 
 	def createDataFile(data):
 		"""
@@ -385,9 +393,10 @@ class Plotter:
 		  <timestamp> <system mem> <system cpu> <proc1 mem> <proc1 cpu> <proc2 mem> <proc2 cpu> ...
 		  ...
 		"""
-		file = open(Plotter.DataFilename, "w")
+		filename = Options.dirOut + "/" + Plotter.DATA_FILE
+		file = open(filename, "w")
 		if file is None:
-			raise RuntimeError("Failed to create data file: %s" % Plotter.DataFilename)
+			raise RuntimeError("Failed to create data file: %s" % filename)
 		index = 0
 		for timestamp in data.time:
 			file.write("%d" % timestamp)
@@ -401,8 +410,9 @@ class Plotter:
 
 
 	def removeDataFile():
-		if os.path.isfile(Plotter.DataFilename):
-			os.remove(Plotter.DataFilename)
+		filename = Options.dirOut + "/" + Plotter.DATA_FILE
+		if os.path.isfile(filename):
+			os.remove(filename)
 
 	removeDataFile = staticmethod(removeDataFile)
 
@@ -545,7 +555,7 @@ class Plotter:
 		self.createConfigFile(self.ConfigFilename, data, units or data.units)
 		# Convert with gnuplot
 		try:
-			filename = "mem-cpu-plot-%s.svg" % self.id
+			filename = "%s/mem-cpu-plot-%s.svg" % (Options.dirOut, self.id)
 			file = open(filename, "w")
 			if file is None:
 				raise RuntimeError("Failed to create output file: %s" % filename)

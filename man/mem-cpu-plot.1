@@ -14,8 +14,14 @@ and --resource options).
 .SH OPTIONS
 
 .TP
-\fI--input-file\fP=<path> (\fI-i\fP <path>)
+\fI--in\fP=<path> (\fI-i\fP <path>)
 Specifies the input file name. Standard input is used by default.
+
+.TP
+\fI--out\fP=<path> (\fI-i\fP <path>)
+Specifies output directory. Current directory is used by default.
+The output directory is also used to create temporary files during
+report generation.
 
 .TP
 \fI--process\fP (\fI-p\fP)
@@ -36,7 +42,7 @@ mem-cpu-monitor -i 1 <-p PID|-n process-name>  >  memcpu.log
 .br
 ^C
 .br
-mem-cpu-plot < memcpu.log > plot.svg
+mem-cpu-plot < memcpu.log
 
 After stopping monitoring with ctrl+C, mem-cpu-plot creates
 plot.svg SVG file containing the memory and cpu usage of
