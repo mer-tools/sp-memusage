@@ -489,24 +489,29 @@ class Plotter:
 		else:
 			cpuAxis = "x1y1"
 
-		memoryLabel = ""
-		cpuLabel = ""
+		labelMemSuffix = ""
+		labelCpuSuffix = ""
+		labelDelimiter = ""
 		if self.type == self.PLOT_ALL:
-			memoryLabel = "(memory)"
-			cpuLabel= "(cpu)"
+			labelMemSuffix = "memory"
+			labelCpuSuffix = "cpu"
+			labelDelimiter = "-"
 
 		self.cfg.write("plot ")
 		separator = "\t"
 		for unit in units:
 			self.cfg.write("\\\n")
-			label = "%s[%s]" % (unit.name, unit.pid)
+			if len(units) > 1:
+				labelPrefix = "%s(%s)%s" % (unit.name, unit.pid, labelDelimiter)
+			else:
+				labelPrefix = ""
 			if self.type & self.PLOT_MEMORY:
 				self.cfg.write("%s\"%s\" using 1:%d title \"%s%s\" axes x1y1 \\\n" %
-							 (separator, self.DataFilename, unit.index * 2 + 2, label, memoryLabel))
+							 (separator, self.DataFilename, unit.index * 2 + 2, labelPrefix, labelMemSuffix))
 				separator = "\t,"
 			if self.type & self.PLOT_CPU:
 				self.cfg.write("%s\"%s\" using 1:%d title \"%s%s\" axes %s \\\n" % 
-							(separator, self.DataFilename, unit.index * 2 + 3, label, cpuLabel, cpuAxis))
+							(separator, self.DataFilename, unit.index * 2 + 3, labelPrefix, labelCpuSuffix, cpuAxis))
 				separator = "\t,"
 		self.cfg.write("\n")
 
@@ -595,7 +600,7 @@ if Options.reportType & Options.REPORT_PROCESS:
 			id = "system"
 		else:
 			id = unit.pid
-		plotter = Plotter("%s memory and CPU usage graph" % unit.name, id, Plotter.PLOT_ALL)
+		plotter = Plotter("Memory and CPU usage graph\\n%s(%d)" % (unit.name, unit.pid), id, Plotter.PLOT_ALL)
 		plotter.plot(data, units)
 
 Plotter.removeDataFile()
