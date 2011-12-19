@@ -538,7 +538,11 @@ class Plotter:
 		self.setHeader()
 		self.setAxisX("Time (s)", data.time[0], data.time[-1])
 		if self.type & self.PLOT_MEMORY:
-			self.setAxisY("Used system / dirty process memory", bottomMemory * 0.9, topMemory * 1.1, "%.1s%c")
+			if len(units) > 1:
+				label = "Used system / dirty process memory"
+			else:
+				label = units[0].pid == 0 and "Used system memory" or "Dirty process memory"
+			self.setAxisY(label, bottomMemory * 0.9, topMemory * 1.1, "%.1s%c")
 			if self.type & self.PLOT_CPU:
 				self.setAxisY2("CPU %", bottomCpu * 0.9, topCpu * 1.1)
 		else:
