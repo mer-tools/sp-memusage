@@ -110,10 +110,17 @@ class Unit:
 		self.index = Unit.index
 		Unit.index += 1
 
+		self.avgMemUsage = 0
+		self.avgCpuUsage = 0
 		
 	def appendUsageData(self, mem, cpu):
 		"Adds resource (memory, cpu) usage data"
+		n = len(self.memUsage)
+		self.avgMemUsage = self.avgMemUsage * (float(n) / (n + 1)) + mem / (n + 1)
 		self.memUsage.append(mem)
+
+		n = len(self.cpuUsage)
+		self.avgCpuUsage = self.avgCpuUsage * (float(n) / (n + 1)) + cpu / (n + 1)
 		self.cpuUsage.append(cpu)
 
 
@@ -487,13 +494,14 @@ class Plotter:
 		self.cfg.write("set style data lines\n")
 		self.cfg.write("set key bmargin\n")
 		
-	def setPlot(self, units):
+	def setPlot(self, plotUnits):
 		"Sets the graphs for system and process resource usage."
 		if self.type & self.PLOT_MEMORY:
 			cpuAxis = "x1y2"
 		else:
 			cpuAxis = "x1y1"
 
+		units = plotUnits
 		labelMemSuffix = ""
 		labelCpuSuffix = ""
 		labelDelimiter = ""
@@ -501,6 +509,10 @@ class Plotter:
 			labelMemSuffix = "memory"
 			labelCpuSuffix = "cpu"
 			labelDelimiter = "-"
+		elif self.type == self.PLOT_MEMORY:
+			units = sorted(plotUnits, key=lambda unit: unit.avgMemUsage, reverse=True)
+		elif self.type == self.PLOT_CPU:
+			units = sorted(plotUnits, key=lambda unit: unit.avgCpuUsage, reverse=True)
 
 		self.cfg.write("plot ")
 		separator = "\t"
@@ -585,9 +597,9 @@ class Plotter:
 
 		except OSError, e:
 			print >> sys.stderr, "ERROR: failed to execute gnuplot (%s)" % e.strerror
-			print >> sys.stderr, "Check if the gnuplot is installed and try again."
+			print >> sys.stderr, "Check if the gnuplot package is installed and try again."
 			self.cleanup()
-			sys.exit(2)
+			raise
 
 		self.cleanup()
 
@@ -595,27 +607,35 @@ class Plotter:
 
 # main
 
+if not (os.path.isfile("/usr/bin/gnuplot") or os.path.isfile("/usr/local/bin")):
+	print >> sys.stderr, "ERROR: failed to locate gnuplot uility."
+	print >> sys.stderr, "Check if the gnuplot package is installed and try again."
+	sys.exit(-1)
+
 Options.parse(sys.argv[1:])
 parser = Parser()
 data = parser.read(Options.fileIn)
 
 Plotter.createDataFile(data)
 
-if Options.reportType & Options.REPORT_RESOURCE and len(data.units) > 1:
-	plotter = Plotter("Memory usage graph", "memory", Plotter.PLOT_MEMORY)
-	plotter.plot(data)
-	plotter = Plotter("CPU usage graph", "cpu", Plotter.PLOT_CPU)
-	plotter.plot(data)
+try:
+	if Options.reportType & Options.REPORT_RESOURCE and len(data.units) > 1:
+		plotter = Plotter("Memory usage graph", "memory", Plotter.PLOT_MEMORY)
+		plotter.plot(data)
+		plotter = Plotter("CPU usage graph", "cpu", Plotter.PLOT_CPU)
+		plotter.plot(data)
 
-if Options.reportType & Options.REPORT_PROCESS:
-	for unit in data.units:
-		units = [unit]
-		if unit.pid == 0:
-			id = "system"
-		else:
-			id = unit.pid
-		plotter = Plotter("Memory and CPU usage graph\\n%s(%d)" % (unit.name, unit.pid), id, Plotter.PLOT_ALL)
-		plotter.plot(data, units)
+	if Options.reportType & Options.REPORT_PROCESS:
+		for unit in data.units:
+			units = [unit]
+			if unit.pid == 0:
+				id = "system"
+			else:
+				id = unit.pid
+			plotter = Plotter("Memory and CPU usage graph\\n%s(%d)" % (unit.name, unit.pid), id, Plotter.PLOT_ALL)
+			plotter.plot(data, units)
+except OSError, e:
+	""
 
 Plotter.removeDataFile()
 
