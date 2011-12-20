@@ -65,7 +65,7 @@ CI tests for sp-memusage
 
 %files tests
 %defattr(-,root,root,-)
-%{_datadir}/%{name}-tests/*
+%{_datadir}/%{name}-tests/
 
 %package visualize
 Summary: Visualizing sp-memusage output
