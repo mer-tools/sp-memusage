@@ -155,7 +155,8 @@ class Parser:
 	  12:20:01     899116    +124   5.9%  828    14176  164788      +4   1.0%
 	"""
 	
-	reSystem = re.compile("System: CPU: ([0-9]+) MHz max, total memory: ([0-9]+) kB RAM, ([0-9]+) kB swap")
+	reSystemMem = re.compile("(.*) total memory: ([0-9]+) kB RAM, ([0-9]+) kB swap")
+	reSystemCpu = re.compile("System: CPU: ([0-9]+) MHz max,")
 	reHeader = re.compile(" *\|  system memory   \|system CPU ")
 	reHeaderProcess = re.compile("[^PID]*PID ([0-9]+) ([^\|\n\033]+)")
 	reData = re.compile("([^ ]+) +([0-9]+) +[0-9+\-]+ +([0-9\.]+)% +([0-9]+)")
@@ -184,12 +185,16 @@ class Parser:
 		  System: CPU: 2201 MHz max, total memory: 4081788 kB RAM, 5099512 kB swap
 		"""
 		for line in self.file:
-			match = self.reSystem.match(line)
+			match = self.reSystemMem.match(line)
 			if match:
-				self.data.maxCpu = int(match.group(1))
 				self.data.maxMemory = (int(match.group(2)) + int(match.group(3))) * 1024
-				return 
-		raise RuntimeError("Failed to locate system data")
+				match = self.reSystemCpu.match(match.group(1))
+				if match:
+					self.data.maxCpu = int(match.group(1))
+					return
+				raise RuntimeError("Failed to read CPU data from header. "
+								"Reports without maximum CPU frequency data are not supported")
+		raise RuntimeError("Failed to locate line containing total system memory data")
 
 
 	def readHeader(self):
@@ -421,7 +426,7 @@ class Plotter:
 		"Sets Y axis range (min-max) and formatting."
 		if min == max:
 			max += 1
-		self.cfg.write("set yrange[%d:%d]\n" % (min, max))
+		self.cfg.write("set yrange[%f:%f]\n" % (min, max))
 		
 		if format:
 			self.cfg.write("set format y \"%s\"\n" % format)
@@ -433,7 +438,7 @@ class Plotter:
 	def setAxisY2(self, label, min, max, format = None):
 		"Sets Y2 axis range and formatting."
 		
-		self.cfg.write("set y2range[%d:%d]\n" % (min, max))
+		self.cfg.write("set y2range[%f:%f]\n" % (min, max))
 		
 		if format:
 			self.cfg.write("set format y2 \"%s\"\n" % format)
@@ -520,7 +525,8 @@ class Plotter:
 		self.cfg = open(name, "w")
 		if self.cfg is None:
 			raise RuntimeError("Failed to create data file: %s" % name)
-		
+
+		# calculate vertical axis range
 		topMemory = bottomMemory = units[0].memUsage[0]
 		topCpu = bottomCpu = units[0].cpuUsage[0]
 		for unit in units:
@@ -534,6 +540,10 @@ class Plotter:
 					bottomCpu = value
 				if value > topCpu:
 					topCpu = value
+		if topCpu == bottomCpu:
+			topCpu = bottomCpu + 1
+		if topMemory == bottomMemory:
+			topMemory = bottomMemory + 1
 
 		self.setHeader()
 		self.setAxisX("Time (s)", data.time[0], data.time[-1])
@@ -591,7 +601,7 @@ data = parser.read(Options.fileIn)
 
 Plotter.createDataFile(data)
 
-if Options.reportType & Options.REPORT_RESOURCE:
+if Options.reportType & Options.REPORT_RESOURCE and len(data.units) > 1:
 	plotter = Plotter("Memory usage graph", "memory", Plotter.PLOT_MEMORY)
 	plotter.plot(data)
 	plotter = Plotter("CPU usage graph", "cpu", Plotter.PLOT_CPU)
