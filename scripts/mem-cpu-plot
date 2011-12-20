@@ -607,7 +607,10 @@ class Plotter:
 
 # main
 
-if not (os.path.isfile("/usr/bin/gnuplot") or os.path.isfile("/usr/local/bin")):
+try:
+	gnuplot = subprocess.Popen(["gnuplot", "--version"], stdout=open('/dev/null', 'w'), stderr=subprocess.STDOUT)
+	gnuplot.wait()
+except OSError, e:
 	print >> sys.stderr, "ERROR: failed to locate gnuplot uility."
 	print >> sys.stderr, "Check if the gnuplot package is installed and try again."
 	sys.exit(-1)
