@@ -7,27 +7,47 @@ mem-cpu-plot [-i <input filename>] [-o <output filename>]
 \fImem-cpu-plot\fP parses mem-cpu-monitor output and builds memory and cpu 
 usage graphs for system and monitored processes. \fImem-cpu-plot\fP accepts
 both - color and no-color mem-cpu-monitor output.
+
+By default it creates both - process and resource based reports (see --process
+and --resource options).
+
 .SH OPTIONS
 
 .TP
-\fI--out\fP=<path> (\fI-o\fP <path)
-Specifies the output file name. Standard output is used by default.
+\fI--in\fP=<path> (\fI-i\fP <path>)
+Specifies the input file name. Standard input is used by default.
 
 .TP
-\fI--input-file\fP=<path> (\fI-i\fP <path>)
-Specifies the input file name. Standard input is used by default.
+\fI--out\fP=<path> (\fI-i\fP <path>)
+Specifies output directory. Current directory is used by default.
+The output directory is also used to create temporary files during
+report generation.
+
+.TP
+\fI--process\fP (\fI-p\fP)
+Creates one memory & cpu usage report for every process.
+
+.TP
+\fI--resource\fP (\fI-r\fP)
+Creates single memory usage report and single cpu usage report for 
+all processes.
 
 .TP 
  \fI--help\fP (\fI-h\fP)
 Displays help information and exits.
 
 .SH EXAMPLES
-.TP
-mem-cpu-monitor -i 1 -p <somepid> | mem-cpu-plot > plot.svg
 
-After stopping monitoring with ctrl+C mem-cpu-plot a plot.svg
-file will be created containing system and process <somepid>
-memory and cpu usage.
+mem-cpu-monitor -i 1 <-p PID|-n process-name>  >  memcpu.log
+.br
+^C
+.br
+mem-cpu-plot < memcpu.log
+
+After stopping monitoring with ctrl+C, mem-cpu-plot creates
+plot.svg SVG file containing the memory and cpu usage of
+the whole system and given processes.
+.
 .SH SEE ALSO
 .IR mem-cpu-monitor (1)
 .SH COPYRIGHT

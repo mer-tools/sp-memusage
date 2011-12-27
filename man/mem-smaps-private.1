@@ -1,25 +1,37 @@
-.TH MEM-SMAPS-PRIVATE 1 "2007-03-26" "sp-memusage"
+.TH MEM-SMAPS-PRIVATE 1 "2011-11-09" "sp-memusage"
 .SH NAME
-mem-smaps-private - show private memory usage of given process
+mem-smaps-private - show SMAPS based memory usage for given processes
 .SH SYNOPSIS
 mem-smaps-private \fIPID\fP
 .SH DESCRIPTION
-\fImem-smaps-private\fP outputs the given process private memory usage.
-This information is parsed from the /proc/PID/smaps file.
+\fImem-smaps-private\fP outputs memory usage for the given processes.
+This information is parsed from the /proc/PID/smaps file and includes
+totals for its memory mappings PSS, clean private and swapped, private
+and shared dirty usage.
 .SH EXAMPLES
 Checking single process memory usage:
-.br
-	\fImem-smaps-private\fP $(pidof pulseaudio)
+.nf
+	$ \fImem-smaps-private\fP $(pidof pulseaudio)
+	PID 581: pulseaudio --system --high-priority --log-level=0 
+	- Swapped dirty memory:       0 kB
+	- Private dirty memory:    5776 kB
+	- Shared  dirty memory:       0 kB
+	- Clean private memory:    2592 kB
+	- Proportional set size:   8561 kB
+.fi
 .PP
 Checking all processes memory usage:
-.br
-	cd /proc
-.br
-	for pid in [0-9]*; do \fImem-smaps-private\fP $pid; done
+.nf
+	$ cd /proc
+	$ for pid in [0-9]*; do \fImem-smaps-private\fP $pid; done
+.fi
 .SH SEE ALSO
+.IR pmap (1),
+.IR mem-cpu-monitor (1),
+.IR mem-smaps-totals (1),
 .IR mem-dirty-code-pages (1)
 .SH COPYRIGHT
-Copyright (C) 2006-2009 Nokia Corporation.
+Copyright (C) 2006-2011 Nokia Corporation.
 .PP
 This is free software.  You may redistribute copies of it under the
 terms of the GNU General Public License v2 included with the software.
