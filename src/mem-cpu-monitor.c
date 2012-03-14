@@ -16,10 +16,11 @@
  *
  * This file is part of sp-memusage.
  *
- * Copyright (C) 2005-2010 by Nokia Corporation
+ * Copyright (C) 2005-2012 by Nokia Corporation
  *
  * Authors: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
  *          Arun Srinivasan <arun.srinivasan@nokia.com>
+ *          Andris Zeila <andris.zeila@accenture.com>
  * Contact: Eero Tamminen <eero.tamminen@nokia.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -346,7 +347,6 @@ static void cgroup_read(cgroup_data_t* self)
 	sp_measure_get_sys_data(self->data2, SNAPSHOT_SYS_MEM_CGROUPS, NULL);
 }
 
-
 /**
  * Swaps cgroup data references
  *
@@ -361,6 +361,8 @@ static void cgroup_swap(cgroup_data_t* self)
 	self->data2 = self->data1;
 	self->data1 = swap;
 }
+
+
 /*
  * Writer functions used to output the system/process statistics.
  */
