@@ -1591,6 +1591,8 @@ int main(int argc, char** argv)
 		app_data_remove_proc(&app_data, FIELD_PROC_PID(&app_data.proc_list->data[0]));
 	}
 	app_data_release(&app_data);
+
+	return 0;
 }
 
 /* ========================================================================= *
