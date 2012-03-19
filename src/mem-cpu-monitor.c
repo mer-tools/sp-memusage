@@ -640,7 +640,7 @@ static int
 app_data_create_header(app_data_t* self)
 {
 	memset(&self->root_header, 0, sizeof(sp_report_header_t));
-	/* timestamp header*/
+	/* timestamp header */
 	if (sp_report_header_add_child(&self->root_header, HEADER_TITLE_TIMESTAMP, 12, SP_REPORT_ALIGN_CENTER, write_sys_timestamp, (void*)self) == NULL) return -ENOMEM;
 
 	/* watermarks header if necessary */
@@ -649,8 +649,8 @@ app_data_create_header(app_data_t* self)
 		if (self->watermark_header == NULL) return -ENOMEM;
 	}
 
-	/* memory header containing used system memory and it's change from the previous snapshot columns*/
-	sp_report_header_t* mem_header = sp_report_header_add_child(&self->root_header, "system memory", 0, SP_REPORT_ALIGN_CENTER, NULL, NULL);
+	/* memory header containing used system memory and it's change from the previous snapshot columns */
+	sp_report_header_t* mem_header = sp_report_header_add_child(&self->root_header, "system memory", 0, SP_REPORT_ALIGN_LEFT, NULL, NULL);
 	if (mem_header == NULL) return -ENOMEM;
 	if (sp_report_header_add_child(mem_header, "used:", 10, SP_REPORT_ALIGN_RIGHT, write_sys_mem_used, (void*)self) == NULL) return -ENOMEM;
 	if (sp_report_header_add_child(mem_header, "change:", 8, SP_REPORT_ALIGN_RIGHT, write_sys_mem_change, (void*)self) == NULL) return -ENOMEM;
@@ -673,7 +673,7 @@ app_data_create_header(app_data_t* self)
 	}
 
 	/* cpu header containing cpu usage and average frequency columns */
-	sp_report_header_t* cpu_header = sp_report_header_add_child(&self->root_header, "system CPU", 0, SP_REPORT_ALIGN_CENTER, NULL, NULL);
+	sp_report_header_t* cpu_header = sp_report_header_add_child(&self->root_header, "system CPU", 0, SP_REPORT_ALIGN_LEFT, NULL, NULL);
 	if (cpu_header == NULL) return -ENOMEM;
 	if (sp_report_header_add_child(cpu_header, "%:", 6, SP_REPORT_ALIGN_RIGHT, write_sys_cpu_usage, (void*)self) == NULL) return -ENOMEM;
 	if (sp_report_header_add_child(cpu_header, "MHz:", 5, SP_REPORT_ALIGN_RIGHT, write_sys_cpu_freq, (void*)self) == NULL) return -ENOMEM;
