@@ -1,4 +1,4 @@
-.TH MEM-SMAPS-PRIVATE 1 "2012-03-13" "sp-memusage"
+.TH MEM-SMAPS-PRIVATE 1 "2012-03-22" "sp-memusage"
 .SH NAME
 mem-smaps-private - show memory usage for given processes
 .SH SYNOPSIS
@@ -11,13 +11,18 @@ private and shared dirty usage.
 .SH EXAMPLES
 Checking single process memory usage:
 .nf
-	$ \fImem-smaps-private\fP $(pidof pulseaudio)
+	$ \fImem-smaps-private\fP pulseaudio
 	PID 581: pulseaudio --system --high-priority --log-level=0 
+	- FD count: 34
+	- OOM score: 1 (adj=-50)
+	- Physical memory/pmem:       0 kB
 	- Swapped dirty memory:       0 kB
-	- Private dirty memory:    5776 kB
+	- Private dirty memory:    2088 kB
 	- Shared  dirty memory:       0 kB
-	- Clean private memory:    2592 kB
-	- Proportional set size:   8561 kB
+	- Clean private memory:     808 kB
+	- Proportional set size:   3064 kB
+	- Virtual size (peak):    32404 kB (32536 kB)
+	- Thread IDs: 1744 1764 1765 1766 1767
 .fi
 .PP
 Checking all processes memory usage:

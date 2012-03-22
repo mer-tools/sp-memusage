@@ -23,12 +23,12 @@
 
 if [ $# -lt 1 ]; then
 	echo
-	echo "usage: ${0##*/} <process PIDs>"
+	echo "usage: ${0##*/} <process PIDs or names>"
 	echo
-	echo "print the process(es) memory usage according to SMAPS etc."
+	echo "print the process(es) resource usage according to SMAPS etc."
 	echo
 	echo "examples:"
-	echo "  ${0##*/} \$(pidof pulseaudio)"
+	echo "  ${0##*/} pulseaudio"
 	echo "or:"
 	echo "  cd /proc"
 	echo "  ${0##*/} [0-9]*"
@@ -45,10 +45,6 @@ fi
 
 output_pid_info()
 {
-	if [ \! -d $1 ]; then
-		echo "ERROR: PID $1 doesn't exist!"
-		return
-	fi
 	smaps=$1/smaps
 	if [ \! -f $smaps ]; then
 		echo "ERROR: $smaps SMAPS file doesn't exist!"
@@ -83,9 +79,23 @@ END {
 END {
 	printf("- Virtual size (peak):   %6d kB (%d kB)\n", size, peak);
 }' $1/status
-	echo "- Threads: $(ls $1/task|tr '\n' ' ')"
+	echo "- Thread IDs: $(ls $1/task|tr '\n' ' ')"
 }
 
 for pid in $*; do
-	output_pid_info $pid
+	if [ -d $pid ]; then
+		output_pid_info $pid
+		continue
+	fi
+	# not a numeric PID, was it a process name?
+	pids=$(pidof $pid)
+	if [ -z "$pids" ]; then
+		echo "ERROR: PID $pid doesn't exist!"
+		continue
+	fi
+	for pid in $pids; do
+		if [ -d $pid ]; then
+			output_pid_info $pid
+		fi
+	done
 done
