@@ -1,5 +1,6 @@
-sp-memusage (1.3.2), 20 Mar 2012:
+sp-memusage (1.3.2), 23 Mar 2012:
   * mem-smaps-private provides much more info on processes
+    and process names can be used as arguments
   * mem-cpu-monitor and mem-cpu-plot changes so that latter
     will be more resistant to mem-cpu-monitor output column
     layout changes, this implied whitespace change in
