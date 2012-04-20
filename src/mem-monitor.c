@@ -1,7 +1,7 @@
 /* ========================================================================= *
  * File: mem-momitor.c, part of sp-memusage
  * 
- * Copyright (C) 2005-2009 by Nokia Corporation
+ * Copyright (C) 2005-2009,2012 by Nokia Corporation
  * 
  * Author: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
  * Contact: Eero Tamminen <eero.tamminen@nokia.com>
@@ -118,7 +118,7 @@ static int memusage(MEMUSAGE* usage)
       else
       {
          /* Clean-up values */
-         memset(usage, 0, sizeof(usage));
+         memset(usage, 0, sizeof(MEMUSAGE));
       }
    }
 

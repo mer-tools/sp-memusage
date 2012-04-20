@@ -427,7 +427,7 @@ write_sys_mem_used(char* buffer, int size, void* args)
 		strcpy(buffer, NO_DATA);
 		return sizeof(NO_DATA) - 1;
 	}
-	return snprintf(buffer, size + 1, "%8d", FIELD_SYS_MEM_USED(data->sys_data2));	return 0;
+	return snprintf(buffer, size + 1, "%8d", FIELD_SYS_MEM_USED(data->sys_data2));
 }
 
 /**
@@ -456,7 +456,7 @@ write_sys_mem_cgroup_used(char* buffer, int size, void* args)
 		strcpy(buffer, NO_DATA);
 		return sizeof(NO_DATA) - 1;
 	}
-	return snprintf(buffer, size + 1, "%8d", FIELD_SYS_MEM_CGROUP(data->data2));	return 0;
+	return snprintf(buffer, size + 1, "%8d", FIELD_SYS_MEM_CGROUP(data->data2));
 }
 
 /**
@@ -885,6 +885,9 @@ proc_data_check_cmdline(proc_data_t* proc) {
 	int fd = open(buffer, O_RDONLY);
 	if (fd != -1) {
 		len = read(fd, buffer, sizeof(buffer) - 1);
+		if (len < 0) {
+			len = 0;
+		}
 		close(fd);
 	}
 	buffer[len] = '\0';
