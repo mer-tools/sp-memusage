@@ -1,0 +1,5 @@
+* Mon Jan 28 2013 Philippe De Swert <philippe.deswert@jollamobile.com> - 1.3.2
+- First git-pkg version for Mer:Tools:Testing
+
+* Mon Jan 31 2011 Joonas Kylänpää <joonas.kylanpaa@digia.com> 1.2.1
+- Initial RPM packaking. Fixes BMC#13139  
