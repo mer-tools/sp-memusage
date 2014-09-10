@@ -3,7 +3,7 @@
 <suite name="sp-memusage-tests">
 	<set name="sp-memusage" description="sp-memusage">
 		<case name="mem-cpu-monitor0" type="Functional" level="Feature">
-			<step>./mem-cpu-monitor --help</step>
+			<step>mem-cpu-monitor --help</step>
 		</case>
 		<case name="mem-cpu-monitor1" type="Functional" level="Feature">
 			<step>/usr/share/sp-memusage-tests/test-mem-cpu-monitor.sh</step>
@@ -18,7 +18,7 @@
 			<step>run-with-memusage /bin/ls</step>
 		</case>
 		<case name="run-with-mallinfo" type="Functional" level="Feature">
-			<step>MALLINFO=yes run-with-run-with-mallinfo /bin/ls</step>
+			<step>MALLINFO=yes run-with-mallinfo /bin/ls</step>
 		</case>
 	</set>
 </suite>
