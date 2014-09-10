@@ -1,5 +1,5 @@
 #!/bin/sh -e
-log=mem-cpu-monitor.log
+log=/tmp/mem-cpu-monitor.log
 
 exit_cleanup ()
 {
