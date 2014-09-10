@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Helper script for using /lib/libmemusage.so on binaries in Scratchbox,
+# Helper script for using /usr/lib/libmemusage.so on binaries in Scratchbox,
 # includes stuff from run-standalone.sh.  This file is part of
 # sp-memusage.
 #
@@ -68,7 +68,7 @@ fi
 app_opts="$*"
 
 # funny things happen if library set to /etc/ld.so.preload is missing...
-memusage=/lib/libmemusage.so
+memusage=/usr/lib/libmemusage.so
 if [ \! -f $memusage ]; then
 	echo "ERROR: $memusage missing!"
 	exit 1
