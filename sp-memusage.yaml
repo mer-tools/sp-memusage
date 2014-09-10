@@ -1,12 +1,14 @@
 Name: sp-memusage
 Summary: Memory usage reporting tools
-Version: 1.2.1
+Version: 1.3.3
 Release: 1
 Group: Development/Tools
 License: LGPLv2+
-URL: http://www.gitorious.org/+maemo-tools-developers/maemo-tools/sp-memusage
+URL: https://github.com/mer-tools/sp-memusage
 Sources:
     - "%{name}-%{version}.tar.gz"
+SourcePrefix:
+    - "src"
 Description: |
     This package provides a collection of memory usage monitoring tools and scripts.
       - Mallinfo library outputs values from the Glibc mallinfo() function, either
@@ -22,6 +24,8 @@ Description: |
 
 PkgBR:
     - libsp-measure-devel
+Requires:
+    - glibc-utils
 Configure: none
 Builder: make
 SubPackages:
